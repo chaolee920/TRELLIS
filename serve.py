@@ -9,12 +9,17 @@ from fastapi.responses import Response, StreamingResponse
 import uvicorn
 import argparse
 from time import time
+from PIL import Image
+import imageio
 
 from omegaconf import OmegaConf
 from loguru import logger
 
-from trellis.pipelines import TrellisTextTo3DPipeline
+from trellis.pipelines import TrellisImageTo3DPipeline
 from trellis.utils import render_utils, postprocessing_utils
+
+from diffusers import DiffusionPipeline
+from rembg import remove, new_session
 
 
 def get_args():
@@ -28,8 +33,10 @@ def get_args():
 args = get_args()
 app = FastAPI()
 
-pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
+pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
+
+t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2-1", load_in_8bit=True).to("cuda")
 
 def get_config() -> OmegaConf:
     config = OmegaConf.load(args.config)
@@ -53,18 +60,28 @@ async def generate(
 ) -> Response:
     t0 = time()
     print("generation started")
-    
-    outputs = pipeline.run(prompt+", highly detailed", seed=1,
-    # Optional parameters
-    sparse_structure_sampler_params={
-        "steps": 20,
-        "cfg_strength": 7.5,
-    },
-    slat_sampler_params={
-        "steps": 30,
-        "cfg_strength": 6.0,
-#        "temperature": 1.0,	
-    },
+
+    image = t2i_pipe(prompt + ", 4k, white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
+"Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
+"Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
+"Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=25,  guidance_scale=3.5).images[0]
+
+    image = remove(image, session=new_session(), bgcolor=[255, 255, 255, 0])
+
+    outputs = pipeline.run(image, seed=1,
+# Optional parameters
+#    sparse_structure_sampler_params={
+#        "steps": 25,
+#        "cfg_strength": 6.0,
+#	"cfg_interval": [0.5, 0.95],
+#        "rescale_t": 3.0
+#    },
+#    slat_sampler_params={
+#        "steps": 25,
+#        "cfg_strength": 7.5,
+#        "cfg_interval": [0.5, 0.95],
+#        "rescale_t": 3.0
+#    },
     )
     print("generation ended")
     t1 = time()

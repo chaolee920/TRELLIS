@@ -14,11 +14,11 @@ pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarg
 pipeline.cuda()
 
 # Load an image
-prompt = "teal robot sitting on small round stool, highly detailed"
+prompt = input()
 
 # Run the pipeline
 outputs = pipeline.run(
-    prompt,
+    prompt+"highly detailed, best quality",
     seed=1,
     # Optional parameters
     # sparse_structure_sampler_params={
