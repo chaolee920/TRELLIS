@@ -3,7 +3,7 @@ import torch
 from diffusers import DiffusionPipeline
 from rembg import remove, new_session
 
-pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2-1").to("cuda")
+pipe = DiffusionPipeline.from_pretrained("Tencent-Hunyuan/HunyuanDiT-v1.1-Diffusers-Distilled").to("cuda")
 
 prompt = input()
 image = pipe(prompt + ", white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \

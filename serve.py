@@ -11,6 +11,7 @@ import argparse
 from time import time
 from PIL import Image
 import imageio
+import torch
 
 from omegaconf import OmegaConf
 from loguru import logger
@@ -36,7 +37,11 @@ app = FastAPI()
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
 
-t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2-1", load_in_8bit=True).to("cuda")
+t2i_pipe = DiffusionPipeline.from_pretrained("Tencent-Hunyuan/HunyuanDiT-v1.1-Diffusers-Distilled", torch_dtype=torch.float16).to("cuda")
+
+t2i_pipe.transformer = t2i_pipe.transformer.half()
+t2i_pipe.vae = t2i_pipe.vae.half()
+t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
 def get_config() -> OmegaConf:
     config = OmegaConf.load(args.config)
@@ -61,10 +66,11 @@ async def generate(
     t0 = time()
     print("generation started")
 
-    image = t2i_pipe(prompt + ", 4k, white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
+    with torch.cuda.amp.autocast():
+        image = t2i_pipe(prompt + ", 4k, white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
 "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
 "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
-"Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=25,  guidance_scale=3.5).images[0]
+"Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=20,  guidance_scale=3.5).images[0]
 
     image = remove(image, session=new_session(), bgcolor=[255, 255, 255, 0])
 
