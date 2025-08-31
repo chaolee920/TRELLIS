@@ -68,8 +68,8 @@ async def generate(
     t0 = time()
     print("generation started")
 
-    with torch.cuda.amp.autocast():
-        outputs = pipeline.run(prompt + "4k, white background, 3D style, best quality", seed=1, )
+    # with torch.cuda.amp.autocast():
+    outputs = pipeline.run(prompt + "4k, white background, 3D style, best quality", seed=1)
 #         image = t2i_pipe(prompt + ", 4k, white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
 # "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
 # "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
