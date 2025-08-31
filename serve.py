@@ -36,7 +36,7 @@ args = get_args()
 app = FastAPI()
 
 # pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
-pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
+pipeline = TrellisTextTo3DPipeline.from_pretrained("/workspace/vol_sub17/models/TRELLIS-text-xlarge")
 pipeline.cuda()
 
 # t2i_pipe = DiffusionPipeline.from_pretrained("Tencent-Hunyuan/HunyuanDiT-v1.1-Diffusers-Distilled", torch_dtype=torch.float16).to("cuda")
