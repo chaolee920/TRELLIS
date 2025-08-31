@@ -21,10 +21,8 @@
     }
   },
   "dataset": {
-    "name": "finetune_txt23d",
+    "name": "text3d",
     "args": {
-      "type": "text3d",
-      "data_root": "../../data/404mini/train",
       "use_previews": true
     }
   },
