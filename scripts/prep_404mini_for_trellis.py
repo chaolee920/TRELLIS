@@ -1,29 +1,27 @@
-import os, io
-from datasets import load_dataset
+import os
+import io
 from PIL import Image
-
-# Add your local pyspz path if not installed
 import sys
+
+# Add your local pyspz path
 sys.path.append(os.path.abspath("../404-Repo/spz"))
 import pyspz
+
+from datasets import load_dataset
 
 # Output directory for TRELLIS-ready dataset
 OUT_DIR = "data/404mini/train"
 os.makedirs(OUT_DIR, exist_ok=True)
 
-print("Loading 404-Gen/404mini dataset...")
+print("Loading 404-Gen/404mini dataset (streaming mode)...")
 ds = load_dataset(
     "404-Gen/404mini",
     split="train",
-    streaming=False,
-    ignore_verifications=True  # skip schema mismatch checks
+    streaming=True  # avoids Arrow caching and column mismatch errors
 )
 
-# Keep only the columns we need
-columns_to_keep = ["prompt", "spz", "image"]
-extra_columns = [c for c in ds.column_names if c not in columns_to_keep]
-if extra_columns:
-    ds = ds.remove_columns(extra_columns)
+# Only process columns we need: 'prompt', 'spz', 'image'
+required_columns = ["prompt", "spz", "image"]
 
 for i, ex in enumerate(ds):
     sid = f"{i:07d}"
@@ -31,16 +29,18 @@ for i, ex in enumerate(ds):
     os.makedirs(sdir, exist_ok=True)
 
     # 1) Save prompt
+    prompt = ex.get("prompt", "").strip()
     with open(os.path.join(sdir, "prompt.txt"), "w", encoding="utf-8") as f:
-        f.write(ex["prompt"].strip() + "\n")
+        f.write(prompt + "\n")
 
     # 2) Decompress SPZ -> PLY
-    spz_bytes = ex["spz"]
-    if isinstance(spz_bytes, dict) and "bytes" in spz_bytes:
-        spz_bytes = spz_bytes["bytes"]
-    ply_bytes = pyspz.decompress(spz_bytes)
-    with open(os.path.join(sdir, "gaussian.ply"), "wb") as f:
-        f.write(ply_bytes)
+    spz_bytes = ex.get("spz", None)
+    if spz_bytes is not None:
+        if isinstance(spz_bytes, dict) and "bytes" in spz_bytes:
+            spz_bytes = spz_bytes["bytes"]
+        ply_bytes = pyspz.decompress(spz_bytes)
+        with open(os.path.join(sdir, "gaussian.ply"), "wb") as f:
+            f.write(ply_bytes)
 
     # 3) Save preview image if present
     img = ex.get("image", None)
