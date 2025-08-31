@@ -16,7 +16,8 @@ import torch
 from omegaconf import OmegaConf
 from loguru import logger
 
-from trellis.pipelines import TrellisImageTo3DPipeline
+# from trellis.pipelines import TrellisImageTo3DPipeline
+from trellis.pipelines import TrellisTextTo3DPipeline
 from trellis.utils import render_utils, postprocessing_utils
 
 from diffusers import DiffusionPipeline
@@ -35,7 +36,7 @@ args = get_args()
 app = FastAPI()
 
 # pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
-pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
+pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
 pipeline.cuda()
 
 # t2i_pipe = DiffusionPipeline.from_pretrained("Tencent-Hunyuan/HunyuanDiT-v1.1-Diffusers-Distilled", torch_dtype=torch.float16).to("cuda")
