@@ -22,9 +22,11 @@
   },
   "dataset": {
     "name": "finetune_txt23d",
-    "type": "text3d",
-    "data_root": "../../data/404mini/train",
-    "use_previews": true
+    "args": {
+      "type": "text3d",
+      "data_root": "../../data/404mini/train",
+      "use_previews": true
+    }
   },
   "trainer": {
     "name": "TextConditionedSparseFlowMatchingCFGTrainer",
