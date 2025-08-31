@@ -95,7 +95,7 @@ async def generate(
 
     print("generation ended")
     t1 = time()
-    logger.info(f" Generation took: {(t1 - t0) / 60.0} min")
+    print(f" Generation took: {(t1 - t0) / 60.0} min")
 
     buffer = BytesIO()
     outputs['gaussian'][0].save_ply(buffer)
@@ -103,7 +103,7 @@ async def generate(
     buffer.seek(0)
     buffer = buffer.getbuffer()
     t2 = time()
-    logger.info(f" Saving and encoding took: {(t2 - t1) / 60.0} min")
+    print(f" Saving and encoding took: {(t2 - t1) / 60.0} min")
 
     return Response(buffer, media_type="application/octet-stream")
 
