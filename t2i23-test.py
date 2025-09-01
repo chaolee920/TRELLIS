@@ -14,6 +14,10 @@ torch.cuda.empty_cache()
 
 t2i_pipe = DiffusionPipeline.from_pretrained("Qwen/Qwen-Image").to("cuda")
 
+t2i_pipe.transformer = t2i_pipe.transformer.half()
+t2i_pipe.vae = t2i_pipe.vae.half()
+t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
+
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
 
