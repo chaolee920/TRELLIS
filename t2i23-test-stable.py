@@ -14,22 +14,21 @@ import requests
 torch.cuda.empty_cache()
 
 # t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2").to("cuda")
-model_id = "stabilityai/stable-diffusion-3.5-medium"
-nf4_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16
-)
-model_nf4 = SD3Transformer2DModel.from_pretrained(
-    model_id,
-    subfolder="transformer",
-    quantization_config=nf4_config,
-    torch_dtype=torch.bfloat16
-)
+model_id = "stabilityai/stable-diffusion-2-1"
+# nf4_config = BitsAndBytesConfig(
+#     load_in_4bit=True,
+#     bnb_4bit_quant_type="nf4",
+#     bnb_4bit_compute_dtype=torch.bfloat16
+# )
+# model_nf4 = SD3Transformer2DModel.from_pretrained(
+#     model_id,
+#     subfolder="transformer",
+#     quantization_config=nf4_config,
+#     torch_dtype=torch.bfloat16
+# )
 
-t2i_pipe = StableDiffusion3Pipeline.from_pretrained(
+t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
-    transformer=model_nf4,
     dtype=torch.bfloat16
 ).to("cuda")
 # t2i_pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3.5-medium", dtype=torch.float16).to("cuda")
