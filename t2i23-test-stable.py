@@ -15,7 +15,7 @@ import requests
 torch.cuda.empty_cache()
 
 # t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2").to("cuda")
-model_id = "stable-diffusion-v1-5/stable-diffusion-v1-5"
+model_id = "stabilityai/stable-diffusion-2"
 # nf4_config = BitsAndBytesConfig(
 #     load_in_4bit=True,
 #     bnb_4bit_quant_type="nf4",
@@ -32,7 +32,7 @@ model_id = "stable-diffusion-v1-5/stable-diffusion-v1-5"
 
 t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
-    dtype=torch.bfloat16
+    dtype=torch.float16
 ).to("cuda")
 # t2i_pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3.5-medium", dtype=torch.float16).to("cuda")
 # t2i_pipe.transformer = t2i_pipe.transformer.half()
@@ -43,7 +43,7 @@ i23_pipeline.cuda()
 
 prompts_file = open("/workspace/vol_sub17/prompts.txt", "r")
 cnt = 0
-while cnt < 30 :
+while cnt < 2000 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
     image = t2i_pipe(prompt).images[0]
