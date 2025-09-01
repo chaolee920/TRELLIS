@@ -6,15 +6,13 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
 import torch
 
 from diffusers import DiffusionPipeline
-from rembg import remove, new_session
-from transformers import pipeline
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
 
 torch.cuda.empty_cache()
 
-t2i_pipe = DiffusionPipeline.from_pretrained("Tencent-Hunyuan/HunyuanDiT-v1.1-Diffusers-Distilled").to("cuda")
+t2i_pipe = DiffusionPipeline.from_pretrained("prompthero/openjourney")
 
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
