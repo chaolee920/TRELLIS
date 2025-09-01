@@ -7,6 +7,7 @@ import torch
 
 from diffusers import DiffusionPipeline,StableDiffusion3Pipeline
 from diffusers import BitsAndBytesConfig, SD3Transformer2DModel
+from transformers import pipeline
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
@@ -14,7 +15,7 @@ import requests
 torch.cuda.empty_cache()
 
 # t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2").to("cuda")
-model_id = "stabilityai/stable-diffusion-2-base"
+model_id = "stabilityai/stable-diffusion-2"
 # nf4_config = BitsAndBytesConfig(
 #     load_in_4bit=True,
 #     bnb_4bit_quant_type="nf4",
@@ -27,6 +28,8 @@ model_id = "stabilityai/stable-diffusion-2-base"
 #     torch_dtype=torch.bfloat16
 # )
 
+rembg = pipeline("image-segmentation", model="briaai/RMBG-1.4", trust_remote_code=True)
+
 t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
     dtype=torch.bfloat16
@@ -35,8 +38,8 @@ t2i_pipe = DiffusionPipeline.from_pretrained(
 # t2i_pipe.transformer = t2i_pipe.transformer.half()
 # t2i_pipe.vae = t2i_pipe.vae.half()
 # t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
-pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
-pipeline.cuda()
+i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
+i23_pipeline.cuda()
 
 prompts_file = open("/workspace/vol_sub17/prompts.txt", "r")
 cnt = 0
@@ -50,12 +53,16 @@ while cnt < 30 :
 # "Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=20, guidance_scale=3.5).images[0]
     
     print(image)
+    image.save('/workspace/vol_sub17/test-ply/sample.png')
+    image_path = "/workspace/vol_sub17/test-ply/sample.png"
+    pillow_mask = rembg(image_path, return_mask = True) # outputs a pillow mask
+    pillow_image = rembg(image_path) # applies mask on input and returns a pillow image
 
     # image = image.resize((256, 256))
 
     # Run the pipeline
     try:
-        outputs = pipeline.run(image,seed=1)
+        outputs = i23_pipeline.run(pillow_image,seed=1)
     except ValueError:  #raised if `y` is empty.
         continue
 
