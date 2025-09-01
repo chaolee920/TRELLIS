@@ -30,9 +30,9 @@ while cnt < 100 :
         file_data = file.read()
     encoded_data = pybase64.b64encode(file_data).decode("utf-8")
     validate_url = 'http://127.0.0.1:8094/validate_txt_to_3d_ply'
-    with requests.post(validate_url, json={"prompt": prompt, "data": encoded_data}) as response:
-        if response.status == 200:
-            results_validation = response.json()
+    response = requests.post(validate_url, json={"prompt": prompt, "data": encoded_data})
+    if response.status_code == 200:
+        results_validation = response.json()
 
-            validation_score = float(results_validation["score"])
+        validation_score = float(results_validation["score"])
     cnt=cnt+1
