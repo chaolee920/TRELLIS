@@ -18,7 +18,7 @@ pipeline.cuda()
 
 prompts_file = open("/workspace/vol_sub17/prompts.txt", "r")
 cnt = 0
-while cnt < 10 :
+while cnt < 30 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
 
