@@ -25,7 +25,9 @@ while cnt < 100 :
     # Render the outputs
     # Save Gaussians as PLY files
     outputs['gaussian'][0].save_ply("sample.ply")
-    encoded_data = pybase64.b64encode(outputs['gaussian'][0]).decode("utf-8")
+    with open("./sample.ply", "rb") as file:
+        file_data = file.read()
+    encoded_data = pybase64.b64encode(file_data).decode("utf-8")
     validate_url = 'http://127.0.0.1:8094/validate_txt_to_3d_ply'
     with aiohttp.ClientSession() as session:
         with session.post(validate_url, json={"prompt": prompt, "data": encoded_data}) as response:
