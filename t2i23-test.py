@@ -4,9 +4,8 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
                                             # 'auto' is faster but will do benchmarking at the beginning.
                                             # Recommended to set to 'native' if run only once.
 import torch
-# Pipeline for Flux
-from diffusionkit.mlx import FluxPipeline
 
+from diffusers import DiffusionPipeline
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
@@ -14,19 +13,8 @@ import requests
 torch.cuda.empty_cache()
 
 
-t2i_pipe = FluxPipeline(
-  shift=1.0,
-  model_version="argmaxinc/mlx-FLUX.1-schnell-4bit-quantized",
-  low_memory_mode=True,
-  a16=True,
-  w16=True,
-)
 
-# Image Generation
-HEIGHT = 512
-WIDTH = 512
-NUM_STEPS = 4
-CFG_WEIGHT = 0
+t2i_pipe = DiffusionPipeline.from_pretrained("mit-han-lab/nunchaku-flux.1-dev")
 
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
@@ -36,12 +24,9 @@ cnt = 0
 while cnt < 100 :
     prompt = prompts_file.readline()
 
-    image, _ = t2i_pipe.generate_image(
-        prompt,
-        cfg_weight=CFG_WEIGHT,
-        num_steps=NUM_STEPS,
-        latent_size=(HEIGHT // 8, WIDTH // 8),
-    )
+    image = t2i_pipe(
+        prompt
+    ).images[0]
 
     outputs = pipeline.run(image,seed=1)
 
