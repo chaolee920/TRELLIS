@@ -12,10 +12,7 @@ import requests
 
 torch.cuda.empty_cache()
 
-t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/sdxl-turbo").to("cuda")
-t2i_pipe.transformer = t2i_pipe.transformer.half()
-t2i_pipe.vae = t2i_pipe.vae.half()
-t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
+t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/sd-turbo").to("cuda")
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
 
