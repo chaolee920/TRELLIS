@@ -1,0 +1,36 @@
+import os
+#os.environ['ATTN_BACKEND'] = 'flash-attn'   # Can be 'flash-attn' or 'xformers', default is 'flash-attn'
+os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default is 'auto'.
+                                            # 'auto' is faster but will do benchmarking at the beginning.
+                                            # Recommended to set to 'native' if run only once.
+import aiohttp
+import torch
+from trellis.pipelines import TrellisTextTo3DPipeline
+import pybase64
+
+torch.cuda.empty_cache()
+
+
+pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
+pipeline.cuda()
+
+file = open("/workspace/vol_sub17/test/prompts.txt", "r")
+cnt = 0
+while cnt < 100 :
+    prompt = file.readline()
+
+    with torch.cuda.amp.autocast():
+        outputs = pipeline.run(prompt + ", 3D style, best quality",seed=1, )
+
+    # Render the outputs
+    # Save Gaussians as PLY files
+    outputs['gaussian'][0].save_ply("sample.ply")
+    encoded_data = pybase64.b64encode(outputs['gaussian'][0]).decode("utf-8")
+    validate_url = 'http://127.0.0.1:8094/validate_txt_to_3d_ply'
+    with aiohttp.ClientSession() as session:
+        with session.post(validate_url, json={"prompt": prompt, "data": encoded_data}) as response:
+            if response.status == 200:
+                results_validation = response.json()
+
+                validation_score = float(results_validation["score"])
+    cnt=cnt+1
