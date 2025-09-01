@@ -14,7 +14,7 @@ import requests
 torch.cuda.empty_cache()
 
 # t2i_pipe = DiffusionPipeline.from_pretrained("stable-diffusion-v1-5/stable-diffusion-v1-5").to("cuda")
-t2i_pipe = DiffusionPipeline.from_pretrained("Keffisor21/flux1-schnell-bnb-nf4",torch_dtype=torch.float16).to("cuda")
+t2i_pipe = DiffusionPipeline.from_pretrained("AlekseyCalvin/PixelWave_Schnell_v1_fp8_safetensors_by_humblemikey").to("cuda")
 t2i_pipe.transformer = t2i_pipe.transformer.half()
 t2i_pipe.vae = t2i_pipe.vae.half()
 t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
