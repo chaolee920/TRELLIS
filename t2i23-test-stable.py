@@ -12,7 +12,7 @@ import requests
 
 torch.cuda.empty_cache()
 
-t2i_pipe = DiffusionPipeline.from_pretrained("stable-diffusion-v1-5/stable-diffusion-v1-5").to("cuda")
+t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/sdxl-turbo").to("cuda")
 
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
@@ -22,15 +22,15 @@ cnt = 0
 while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
-
-    image = t2i_pipe(prompt + prompt + prompt +", white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
-"Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
-"Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
-"Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=20, guidance_scale=3.5).images[0]
+    image = t2i_pipe(prompt).images[0]
+#     image = t2i_pipe(prompt + prompt + prompt +", white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
+# "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
+# "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
+# "Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=20, guidance_scale=3.5).images[0]
     
     print(image)
 
-    image = image.resize((256, 256))
+    # image = image.resize((256, 256))
 
     # Run the pipeline
     try:
