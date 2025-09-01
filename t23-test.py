@@ -39,3 +39,5 @@ async def main() :
                         validation_score = float(results_validation["score"])
             finally:
                 cnt=cnt+1
+
+main()
