@@ -1,5 +1,5 @@
 import os
-#os.environ['ATTN_BACKEND'] = 'flash-attn'   # Can be 'flash-attn' or 'xformers', default is 'flash-attn'
+os.environ['ATTN_BACKEND'] = 'flash-attn'   # Can be 'flash-attn' or 'xformers', default is 'flash-attn'
 os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default is 'auto'.
                                             # 'auto' is faster but will do benchmarking at the beginning.
                                             # Recommended to set to 'native' if run only once.
@@ -16,7 +16,7 @@ torch.cuda.empty_cache()
 t2i_pipe = FluxPipeline(
   shift=1.0,
   model_version="argmaxinc/mlx-FLUX.1-schnell-4bit-quantized",
-  low_memory_mode=FALSE,
+  low_memory_mode=False,
   a16=True,
   w16=True,
 ).to("cuda")
