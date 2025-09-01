@@ -14,6 +14,9 @@ torch.cuda.empty_cache()
 
 # t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2").to("cuda")
 t2i_pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3.5-medium", torch_dtype=torch.float16).to("cuda")
+t2i_pipe.transformer = t2i_pipe.transformer.half()
+t2i_pipe.vae = t2i_pipe.vae.half()
+t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
 
