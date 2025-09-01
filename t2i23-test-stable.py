@@ -15,7 +15,7 @@ import requests
 torch.cuda.empty_cache()
 
 # t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2").to("cuda")
-model_id = "stabilityai/stable-diffusion-2"
+model_id = "stabilityai/stable-diffusion-3-medium-diffusers"
 # nf4_config = BitsAndBytesConfig(
 #     load_in_4bit=True,
 #     bnb_4bit_quant_type="nf4",
@@ -28,7 +28,7 @@ model_id = "stabilityai/stable-diffusion-2"
 #     torch_dtype=torch.bfloat16
 # )
 
-rembg = pipeline("image-segmentation", model="briaai/RMBG-1.4", trust_remote_code=True)
+# rembg = pipeline("image-segmentation", model="briaai/RMBG-1.4", trust_remote_code=True)
 
 t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
@@ -53,16 +53,16 @@ while cnt < 30 :
 # "Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=20, guidance_scale=3.5).images[0]
     
     print(image)
-    image.save('/workspace/vol_sub17/test-ply/sample.png')
-    image_path = "/workspace/vol_sub17/test-ply/sample.png"
-    pillow_mask = rembg(image_path, return_mask = True) # outputs a pillow mask
-    pillow_image = rembg(image_path) # applies mask on input and returns a pillow image
+    # image.save('/workspace/vol_sub17/test-ply/sample.png')
+    # image_path = "/workspace/vol_sub17/test-ply/sample.png"
+    # pillow_mask = rembg(image_path, return_mask = True) # outputs a pillow mask
+    # pillow_image = rembg(image_path) # applies mask on input and returns a pillow image
 
     # image = image.resize((256, 256))
 
     # Run the pipeline
     try:
-        outputs = i23_pipeline.run(pillow_image,seed=1)
+        outputs = i23_pipeline.run(image,seed=1)
     except ValueError:  #raised if `y` is empty.
         continue
 
