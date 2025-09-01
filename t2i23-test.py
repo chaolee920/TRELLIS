@@ -12,7 +12,7 @@ import requests
 
 torch.cuda.empty_cache()
 
-t2i_pipe = DiffusionPipeline.from_pretrained("prompthero/openjourney").to("cuda")
+t2i_pipe = DiffusionPipeline.from_pretrained("stable-diffusion-v1-5/stable-diffusion-v1-5").to("cuda")
 
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
