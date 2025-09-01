@@ -5,7 +5,9 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
                                             # Recommended to set to 'native' if run only once.
 import torch
 
-from diffusionkit.mlx import FluxPipeline
+from diffusers import DiffusionPipeline
+
+pipe = DiffusionPipeline.from_pretrained("nunchaku-tech/nunchaku-flux.1-schnell")
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
@@ -13,13 +15,7 @@ import requests
 torch.cuda.empty_cache()
 
 # t2i_pipe = DiffusionPipeline.from_pretrained("stable-diffusion-v1-5/stable-diffusion-v1-5").to("cuda")
-t2i_pipe = FluxPipeline(
-  shift=1.0,
-  model_version="argmaxinc/mlx-FLUX.1-schnell-4bit-quantized",
-  low_memory_mode=False,
-  a16=True,
-  w16=True,
-).to("cuda")
+t2i_pipe = DiffusionPipeline.from_pretrained("nunchaku-tech/nunchaku-flux.1-schnell").cuda()
 
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
@@ -29,17 +25,8 @@ cnt = 0
 while cnt < 30 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
-    HEIGHT = 512
-    WIDTH = 512
-    NUM_STEPS = 4
-    CFG_WEIGHT = 0.6
 
-    image, _ = t2i_pipe.generate_image(
-        prompt + "white background, 3D style, best quality",
-        cfg_weight=CFG_WEIGHT,
-        num_steps=NUM_STEPS,
-        latent_size=(HEIGHT // 8, WIDTH // 8),
-    )
+    image = t2i_pipe(prompt).images[0]
 #     image = t2i_pipe(prompt + prompt + prompt +", white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
 # "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
 # "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
