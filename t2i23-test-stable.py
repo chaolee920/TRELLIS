@@ -24,7 +24,7 @@ model_nf4 = SD3Transformer2DModel.from_pretrained(
     model_id,
     subfolder="transformer",
     quantization_config=nf4_config,
-    dtype=torch.bfloat16
+    torch_dtype=torch.bfloat16
 )
 
 t2i_pipe = StableDiffusion3Pipeline.from_pretrained(
