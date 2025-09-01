@@ -12,11 +12,7 @@ import requests
 
 torch.cuda.empty_cache()
 
-t2i_pipe = DiffusionPipeline.from_pretrained("Qwen/Qwen-Image").to("cuda")
-
-t2i_pipe.transformer = t2i_pipe.transformer.half()
-t2i_pipe.vae = t2i_pipe.vae.half()
-t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
+t2i_pipe = DiffusionPipeline.from_pretrained("stable-diffusion-v1-5/stable-diffusion-v1-5").to("cuda")
 
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
@@ -24,6 +20,7 @@ pipeline.cuda()
 prompts_file = open("/workspace/vol_sub17/prompts.txt", "r")
 cnt = 0
 while cnt < 100 :
+    torch.cuda.empty_cache()
     prompt = prompts_file.readline()
 
     image = t2i_pipe(prompt + ", white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
