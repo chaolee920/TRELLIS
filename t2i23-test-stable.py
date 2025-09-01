@@ -12,13 +12,13 @@ import requests
 
 torch.cuda.empty_cache()
 
-t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/sd-turbo").to("cuda")
+t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-3-medium-diffusers").to("cuda")
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
 
 prompts_file = open("/workspace/vol_sub17/prompts.txt", "r")
 cnt = 0
-while cnt < 10 :
+while cnt < 30 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
     image = t2i_pipe(prompt).images[0]
