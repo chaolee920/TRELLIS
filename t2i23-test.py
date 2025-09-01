@@ -19,7 +19,7 @@ pipeline.cuda()
 
 prompts_file = open("/workspace/vol_sub17/prompts.txt", "r")
 cnt = 0
-while cnt < 100 :
+while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
 
@@ -50,4 +50,5 @@ while cnt < 100 :
         results_validation = response.json()
 
         validation_score = float(results_validation["score"])
+        print(validation_score)
     cnt=cnt+1
