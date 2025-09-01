@@ -5,14 +5,15 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
                                             # Recommended to set to 'native' if run only once.
 import torch
 
-from diffusers import DiffusionPipeline
+from diffusers import DiffusionPipeline,StableDiffusion3Pipeline
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
 
 torch.cuda.empty_cache()
 
-t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2").to("cuda")
+# t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2").to("cuda")
+t2i_pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3-medium-diffusers", torch_dtype=torch.float16).to("cuda")
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
 
