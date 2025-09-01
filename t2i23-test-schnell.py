@@ -20,23 +20,34 @@ t2i_pipe = FluxPipeline(
   a16=True,
   w16=True,
 ).to("cuda")
+
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
 
 prompts_file = open("/workspace/vol_sub17/prompts.txt", "r")
 cnt = 0
-while cnt < 10 :
+while cnt < 30 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
+    HEIGHT = 512
+    WIDTH = 512
+    NUM_STEPS = 4
+    CFG_WEIGHT = 0.6
 
-    image = t2i_pipe(prompt + prompt + prompt +", white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
-"Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
-"Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
-"Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=20, guidance_scale=3.5).images[0]
+    image, _ = t2i_pipe.generate_image(
+        prompt + "white background, 3D style, best quality",
+        cfg_weight=CFG_WEIGHT,
+        num_steps=NUM_STEPS,
+        latent_size=(HEIGHT // 8, WIDTH // 8),
+    )
+#     image = t2i_pipe(prompt + prompt + prompt +", white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
+# "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
+# "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
+# "Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=20, guidance_scale=3.5).images[0]
     
     print(image)
 
-    image = image.resize((256, 256))
+    # image = image.resize((256, 256))
 
     # Run the pipeline
     try:
