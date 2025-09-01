@@ -19,8 +19,8 @@ cnt = 0
 while cnt < 100 :
     prompt = file.readline()
 
-    with torch.cuda.amp.autocast():
-        outputs = pipeline.run(prompt + ", 3D style, best quality",seed=1, )
+
+    outputs = pipeline.run(prompt,seed=1, )
 
     # Render the outputs
     # Save Gaussians as PLY files
