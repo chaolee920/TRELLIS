@@ -6,15 +6,15 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
 import torch
 
 from diffusers import DiffusionPipeline
+from rembg import remove, new_session
+from transformers import pipeline
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
 
 torch.cuda.empty_cache()
 
-
-
-t2i_pipe = DiffusionPipeline.from_pretrained("mit-han-lab/nunchaku-flux.1-dev")
+t2i_pipe = DiffusionPipeline.from_pretrained("Tencent-Hunyuan/HunyuanDiT-v1.1-Diffusers-Distilled").to("cuda")
 
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
@@ -24,10 +24,14 @@ cnt = 0
 while cnt < 100 :
     prompt = prompts_file.readline()
 
-    image = t2i_pipe(
-        prompt
-    ).images[0]
+    image = t2i_pipe(prompt + ", white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
+"Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
+"Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
+"Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=20, guidance_scale=3.5).images[0]
 
+    image = image.resize((256, 256))
+
+    # Run the pipeline
     outputs = pipeline.run(image,seed=1)
 
     # Render the outputs
