@@ -20,7 +20,7 @@ while cnt < 100 :
     prompt = prompts_file.readline()
 
 
-    outputs = pipeline.run(prompt,seed=1, )
+    outputs = pipeline.run(prompt + ' ' + prompt + ' ' + prompt,seed=1, )
 
     # Render the outputs
     # Save Gaussians as PLY files
