@@ -28,7 +28,7 @@ while cnt < 100 :
 "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
 "Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=20, guidance_scale=3.5).images[0]
     
-    print(image.shape)
+    print(image)
 
     image = image.resize((256, 256))
 
