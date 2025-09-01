@@ -7,7 +7,6 @@ import torch
 
 from diffusers import DiffusionPipeline
 
-pipe = DiffusionPipeline.from_pretrained("nunchaku-tech/nunchaku-flux.1-schnell")
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
@@ -15,7 +14,7 @@ import requests
 torch.cuda.empty_cache()
 
 # t2i_pipe = DiffusionPipeline.from_pretrained("stable-diffusion-v1-5/stable-diffusion-v1-5").to("cuda")
-t2i_pipe = DiffusionPipeline.from_pretrained("nunchaku-tech/nunchaku-flux.1-schnell").cuda()
+t2i_pipe = DiffusionPipeline.from_pretrained("cocktailpeanut/flux1-schnell-qint8").cuda()
 
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 pipeline.cuda()
