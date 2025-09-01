@@ -3,7 +3,6 @@ import os
 os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default is 'auto'.
                                             # 'auto' is faster but will do benchmarking at the beginning.
                                             # Recommended to set to 'native' if run only once.
-import aiohttp
 import torch
 from trellis.pipelines import TrellisTextTo3DPipeline
 import pybase64
@@ -15,10 +14,10 @@ torch.cuda.empty_cache()
 pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
 pipeline.cuda()
 
-file = open("/workspace/vol_sub17/test/prompts.txt", "r")
+prompts_file = open("/workspace/vol_sub17/test/prompts.txt", "r")
 cnt = 0
 while cnt < 100 :
-    prompt = file.readline()
+    prompt = prompts_file.readline()
 
 
     outputs = pipeline.run(prompt,seed=1, )
