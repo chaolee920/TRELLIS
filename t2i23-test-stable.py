@@ -6,6 +6,7 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
 import torch
 
 from diffusers import DiffusionPipeline,StableDiffusion3Pipeline
+from diffusers import BitsAndBytesConfig, SD3Transformer2DModel
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
@@ -13,7 +14,25 @@ import requests
 torch.cuda.empty_cache()
 
 # t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2").to("cuda")
-t2i_pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3.5-medium", dtype=torch.float16).to("cuda")
+model_id = "stabilityai/stable-diffusion-3.5-medium"
+nf4_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.bfloat16
+)
+model_nf4 = SD3Transformer2DModel.from_pretrained(
+    model_id,
+    subfolder="transformer",
+    quantization_config=nf4_config,
+    torch_dtype=torch.bfloat16
+)
+
+t2i_pipe = StableDiffusion3Pipeline.from_pretrained(
+    model_id, 
+    transformer=model_nf4,
+    torch_dtype=torch.bfloat16
+).to("cuda")
+# t2i_pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3.5-medium", dtype=torch.float16).to("cuda")
 t2i_pipe.transformer = t2i_pipe.transformer.half()
 t2i_pipe.vae = t2i_pipe.vae.half()
 t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
