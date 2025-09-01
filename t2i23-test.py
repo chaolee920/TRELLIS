@@ -19,7 +19,7 @@ pipeline.cuda()
 
 prompts_file = open("/workspace/vol_sub17/prompts.txt", "r")
 cnt = 0
-while cnt < 50 :
+while cnt < 100 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
 
@@ -33,7 +33,10 @@ while cnt < 50 :
     image = image.resize((256, 256))
 
     # Run the pipeline
-    outputs = pipeline.run(image,seed=1)
+    try:
+        outputs = pipeline.run(image,seed=1)
+    except ValueError:  #raised if `y` is empty.
+        continue
 
     # Render the outputs
     # Save Gaussians as PLY files
