@@ -21,6 +21,7 @@ t2i_pipe = DiffusionPipeline.from_pretrained(
     dtype=torch.float16
 ).to("cuda")
 
+angles = ["front view", "side view", "back view", "top view", "45-degree angle view"]
 # t2i_pipe.unet = t2i_pipe.unet.half()
 # t2i_pipe.vae = t2i_pipe.vae.half()
 # t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
@@ -33,11 +34,26 @@ cnt = 0
 while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
-    image = t2i_pipe(prompt + ", white background, 3d style, game asset").images[0]
+    images = []
+
+    # Generate images for each angle
+    for angle in angles:
+        # Combine base prompt with angle description
+        full_prompt = f"{prompt}, {angle}, white background, 3d style, game asset"
+
+        # Generate image
+        image = t2i_pipe(
+            full_prompt,
+            num_inference_steps=25,
+            guidance_scale=7.5
+        ).images[0]
+
+        images.append(image)
+    
 
     # Run the pipeline
     try:
-        outputs = i23_pipeline.run(image,seed=1,
+        outputs = i23_pipeline.run_multi_image(images,seed=1,
             sparse_structure_sampler_params={
                 "steps": 30,
                 "cfg_strength": 8,
