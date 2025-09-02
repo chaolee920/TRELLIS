@@ -21,7 +21,7 @@ t2i_pipe = DiffusionPipeline.from_pretrained(
     dtype=torch.float16
 ).to("cuda")
 
-angles = ["front view", "side view", "back view", "top view", "45-degree angle view"]
+angles = ["front view", "side view", "back view", "top view"]
 # t2i_pipe.unet = t2i_pipe.unet.half()
 # t2i_pipe.vae = t2i_pipe.vae.half()
 # t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
@@ -31,7 +31,7 @@ i23_pipeline.cuda()
 
 prompts_file = open("/workspace/vol_sub17/prompts.txt", "r")
 cnt = 0
-while cnt < 10 :
+while cnt < 300 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
     images = []
@@ -39,7 +39,7 @@ while cnt < 10 :
     # Generate images for each angle
     for angle in angles:
         # Combine base prompt with angle description
-        full_prompt = f"{prompt}, {angle}, white background, 3d style, game asset"
+        full_prompt = f"{prompt}, {angle}, white background, 3d style"
 
         # Generate image
         image = t2i_pipe(
