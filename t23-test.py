@@ -34,4 +34,5 @@ while cnt < 10 :
         results_validation = response.json()
 
         validation_score = float(results_validation["score"])
+        print(validation_score)
     cnt=cnt+1
