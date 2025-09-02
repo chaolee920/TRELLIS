@@ -41,7 +41,16 @@ while cnt < 10 :
 
     # Run the pipeline
     try:
-        outputs = i23_pipeline.run(image,seed=1)
+        outputs = i23_pipeline.run(image,seed=1,
+            sparse_structure_sampler_params={
+                "steps": 30,
+                "cfg_strength": 8,
+            },
+            slat_sampler_params={
+                "steps": 30,
+                "cfg_strength": 4,
+            }
+        )
     except ValueError:  #raised if `y` is empty.
         continue
 

@@ -20,7 +20,16 @@ while cnt < 10 :
     prompt = prompts_file.readline()
 
 
-    outputs = pipeline.run(prompt + ', game asset, 3d asset', seed=1)
+    outputs = pipeline.run(prompt + ', game asset, 3d asset', seed=1,
+        sparse_structure_sampler_params={
+            "steps": 30,
+            "cfg_strength": 8,
+        },
+        slat_sampler_params={
+            "steps": 30,
+            "cfg_strength": 4,
+        }
+    )
 
     # Render the outputs
     # Save Gaussians as PLY files
