@@ -15,7 +15,7 @@ import requests
 torch.cuda.empty_cache()
 
 # t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2").to("cuda")
-model_id = "stabilityai/stable-diffusion-2"
+model_id = "stabilityai/stable-diffusion-2-1-base"
 # nf4_config = BitsAndBytesConfig(
 #     load_in_4bit=True,
 #     bnb_4bit_quant_type="nf4",
