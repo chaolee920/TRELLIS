@@ -5,35 +5,43 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
                                             # Recommended to set to 'native' if run only once.
 import torch
 
-from diffusers import DiffusionPipeline
+from diffusers import HunyuanDiTPipeline
+from diffusers import BitsAndBytesConfig, SD3Transformer2DModel
+from transformers import pipeline
+from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
 
+
+# You may also use English prompt as HunyuanDiT supports both English and Chinese
+# prompt = "An astronaut riding a horse"
+
 torch.cuda.empty_cache()
 
-t2i_pipe = DiffusionPipeline.from_pretrained("stable-diffusion-v1-5/stable-diffusion-v1-5").to("cuda")
+model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 
-pipeline = DiffusionPipeline.from_pretrained("stabilityai/TripoSR", config_name="config.yaml", weight_name="model.ckpt")
-pipeline.cuda()
+t2i_pipe = HunyuanDiTPipeline.from_pretrained(
+    model_id, 
+    dtype=torch.float16
+).to("cuda")
+
+t2i_pipe.unet = t2i_pipe.unet.half()
+t2i_pipe.vae = t2i_pipe.vae.half()
+t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
+
+i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
+i23_pipeline.cuda()
 
 prompts_file = open("/workspace/vol_sub17/prompts.txt", "r")
 cnt = 0
-while cnt < 30 :
+while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
-
-    image = t2i_pipe(prompt + ", accurate, consistent, 3D style, whole content", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
-"Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
-"Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
-"Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=20, guidance_scale=3.5).images[0]
-    
-    print(image)
-
-    image = image.resize((256, 256))
+    image = t2i_pipe(prompt + ", black background, 3d asset, game asset").images[0]
 
     # Run the pipeline
     try:
-        outputs = pipeline.run(image,seed=1)
+        outputs = i23_pipeline.run(image,seed=1)
     except ValueError:  #raised if `y` is empty.
         continue
 

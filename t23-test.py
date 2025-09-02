@@ -16,11 +16,11 @@ pipeline.cuda()
 
 prompts_file = open("/workspace/vol_sub17/prompts.txt", "r")
 cnt = 0
-while cnt < 100 :
+while cnt < 10 :
     prompt = prompts_file.readline()
 
 
-    outputs = pipeline.run(prompt + ' ' + prompt + ' ' + prompt,seed=1, )
+    outputs = pipeline.run(prompt + ', game asset, 3d asset', seed=1)
 
     # Render the outputs
     # Save Gaussians as PLY files

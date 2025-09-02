@@ -14,51 +14,26 @@ import requests
 
 torch.cuda.empty_cache()
 
-# t2i_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2").to("cuda")
-model_id = "stabilityai/stable-diffusion-2-1-base"
-# nf4_config = BitsAndBytesConfig(
-#     load_in_4bit=True,
-#     bnb_4bit_quant_type="nf4",
-#     bnb_4bit_compute_dtype=torch.bfloat16
-# )
-# model_nf4 = SD3Transformer2DModel.from_pretrained(
-#     model_id,
-#     subfolder="transformer",
-#     quantization_config=nf4_config,
-#     torch_dtype=torch.bfloat16
-# )
-
-# rembg = pipeline("image-segmentation", model="briaai/RMBG-1.4", trust_remote_code=True)
+model_id = "stabilityai/stable-diffusion-2"
 
 t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
     dtype=torch.float16
 ).to("cuda")
-# t2i_pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3.5-medium", dtype=torch.float16).to("cuda")
+
 t2i_pipe.unet = t2i_pipe.unet.half()
 t2i_pipe.vae = t2i_pipe.vae.half()
 t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
+
 i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 i23_pipeline.cuda()
 
 prompts_file = open("/workspace/vol_sub17/prompts.txt", "r")
 cnt = 0
-while cnt < 500 :
+while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
-    image = t2i_pipe(prompt).images[0]
-#     image = t2i_pipe(prompt + prompt + prompt +", white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
-# "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
-# "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
-# "Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=20, guidance_scale=3.5).images[0]
-    
-    print(image)
-    # image.save('/workspace/vol_sub17/test-ply/sample.png')
-    # image_path = "/workspace/vol_sub17/test-ply/sample.png"
-    # pillow_mask = rembg(image_path, return_mask = True) # outputs a pillow mask
-    # pillow_image = rembg(image_path) # applies mask on input and returns a pillow image
-
-    # image = image.resize((256, 256))
+    image = t2i_pipe(prompt + ", black background, 3d asset, game asset").images[0]
 
     # Run the pipeline
     try:
