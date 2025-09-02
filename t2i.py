@@ -13,7 +13,7 @@ from rembg import remove, new_session
 #     trust_remote_code=True,
 # ).to("cuda") # Move to GPU if available
 
-model_id = "stabilityai/stable-diffusion-2-1-base"
+model_id = "stabilityai/stable-diffusion-2"
 
 t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
