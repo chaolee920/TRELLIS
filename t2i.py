@@ -11,6 +11,9 @@ t2i_pipe = DiffusionPipeline.from_pretrained(
     dtype=torch.float16
 ).to("cuda")
 
+t2i_pipe.transformer = t2i_pipe.transformer.half()
+# t2i_pipe.vae = t2i_pipe.vae.half()
+t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
 prompt = input()
 
@@ -20,7 +23,7 @@ image = t2i_pipe(
             "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
             "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
             "Extra arms, extra legs, fused fingers, too many fingers, long neck",
-    guidance_scale=6.0, # Example value, adjust for desired output
+    guidance_scale=7.5, # Example value, adjust for desired output
     num_inference_steps=25, # Example value, adjust for desired quality/speed
 ).images[0]
 
