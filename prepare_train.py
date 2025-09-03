@@ -29,15 +29,21 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
                 prompt = base_name.replace("_", " ")
                 
                 # Download .ply.spz
-                spz_path = os.path.join(spz_dir, f"{base_name}.ply.spz")
+                spz_path = os.path.join(spz_dir, "assets", category, f"{base_name}.ply.spz")
                 hf_hub_download(repo_id=repo_id, filename=ply_file, repo_type="dataset", local_dir=spz_dir)
                 
                 # Download .png if available
                 render_path = None
                 if png_file in png_files:
-                    render_path = os.path.join(render_dir, f"{base_name}.png")
+                    render_path = os.path.join(render_dir, "assets", category,f"{base_name}.png")
                     hf_hub_download(repo_id=repo_id, filename=png_file, repo_type="dataset", local_dir=render_dir)
-                
+                # acoustic_bass_with_elegant_curves
+                # ,acoustic_bass_with_elegant_curves,
+                # 404mini,
+                # ['acoustic bass with elegant curves'],
+                # 5.0,
+                # datasets/404mini/spz/acoustic_bass_with_elegant_curves.ply.spz,
+                # datasets/404mini/renders/acoustic_bass_with_elegant_curves.png
                 data.append({
                     "uid": base_name,
                     "name": base_name,
