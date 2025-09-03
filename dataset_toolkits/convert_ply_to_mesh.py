@@ -19,6 +19,7 @@ def main(csv_path, output_dir):
         try:
             convert_ply_to_mesh(ply_path, obj_path)
             df.at[idx, 'model_path'] = obj_path
+            print('convert done')
         except Exception as e:
             print(f"Error converting {ply_path}: {e}")
     
