@@ -11,17 +11,19 @@ from transformers import pipeline
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
+from rembg import remove, new_session
 
 torch.cuda.empty_cache()
 
 model_id = "stabilityai/stable-diffusion-2"
+rembg_session = new_session('u2net')
 
 t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
     dtype=torch.float16
 ).to("cuda")
 
-angles = ["front view", "side view", "back view", "top view"]
+angles = ["front view", "side view", "back view"]
 # t2i_pipe.unet = t2i_pipe.unet.half()
 # t2i_pipe.vae = t2i_pipe.vae.half()
 # t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
@@ -39,7 +41,7 @@ while cnt < 300 :
     # Generate images for each angle
     for angle in angles:
         # Combine base prompt with angle description
-        full_prompt = f"{prompt}, {angle}, white background, 3d style"
+        full_prompt = f"{prompt}, {angle}, white background, 3d style, best quality, high resolution"
 
         # Generate image
         image = t2i_pipe(
@@ -47,6 +49,9 @@ while cnt < 300 :
             num_inference_steps=25,
             guidance_scale=7.5
         ).images[0]
+
+        # Remove background
+        image = remove(image, session=rembg_session)
 
         images.append(image)
     
