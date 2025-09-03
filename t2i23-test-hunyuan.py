@@ -4,7 +4,7 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
                                             # 'auto' is faster but will do benchmarking at the beginning.
                                             # Recommended to set to 'native' if run only once.
 import torch
-
+import torch.nn as nn
 from diffusers import HunyuanDiTPipeline
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
@@ -19,16 +19,16 @@ torch.cuda.empty_cache()
 
 model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 
-t2i_pipe = HunyuanDiTPipeline.from_pretrained(
+t2i_pipe = nn.DataParallel(HunyuanDiTPipeline.from_pretrained(
     model_id, 
     dtype=torch.float16
-).to("cuda:1")
+)).to("cuda")
 
-t2i_pipe.transformer = t2i_pipe.transformer.half()
-t2i_pipe.vae = t2i_pipe.vae.half()
-t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
+# t2i_pipe.transformer = t2i_pipe.transformer.half()
+# t2i_pipe.vae = t2i_pipe.vae.half()
+# t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
-i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
+i23_pipeline = nn.DataParllel(TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large"))
 i23_pipeline.cuda()
 
 prompts_file = open("/workspace/logs/prompts.txt", "r")
