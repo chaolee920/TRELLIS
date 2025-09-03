@@ -28,7 +28,7 @@ def main(csv_path, output_dir):
         obj_path = os.path.join(mesh_dir, f"{row['uid']}.obj")
         tasks.append((ply_path, obj_path))
         df.at[idx, 'model_path'] = obj_path
-    
+        print('current done')
     # Parallel processing
     with Pool(processes=cpu_count()) as pool:
         results = pool.map(convert_ply_to_mesh, tasks)
