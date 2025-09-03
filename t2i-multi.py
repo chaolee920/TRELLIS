@@ -29,3 +29,5 @@ for angle in angles:
     image = remove(image, session=rembg_session)
 
     image.save(f"./multi/img_{angle}.png")
+    print(torch.cuda.memory_allocated() / 1024**2, "MB allocated")
+    print(torch.cuda.memory_reserved() / 1024**2, "MB reserved")
