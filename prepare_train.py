@@ -19,8 +19,8 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
         try:
             base_name = os.path.splitext(os.path.basename(json_file))[0]
             category = json_file.split('/')[1]  # e.g., 'an'
-            ply_file = f"assets/{category}/{base_name}.ply.spz"
-            png_file = f"assets/{category}/{base_name}.png"
+            ply_file = f"assets/{base_name}.ply.spz"
+            png_file = f"assets/{base_name}.png"
             
             if ply_file in ply_files:
                 # Derive prompt from file name

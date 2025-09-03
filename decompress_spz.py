@@ -8,7 +8,7 @@ def decompress_spz_files(csv_path, output_dir):
     os.makedirs(ply_dir, exist_ok=True)
     
     for idx, row in df.iterrows():
-        spz_path = row['model_path']
+        spz_path = f"{row['model_path']}/assets/"
         ply_path = os.path.join(ply_dir, f"{row['uid']}.ply")
         try:
             with open(spz_path, 'rb') as f:
@@ -25,7 +25,7 @@ def decompress_spz_files(csv_path, output_dir):
 
 if __name__ == "__main__":
     csv_path = "datasets/404mini/404mini.csv"
-    output_dir = "datasets/404mini"
+    output_dir = "datasets/404mini/assets"
     try:
         df = decompress_spz_files(csv_path, output_dir)
         print(f"Decompressed files saved to {output_dir}/ply")
