@@ -33,7 +33,15 @@ cnt = 0
 while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
-    image = t2i_pipe(prompt + ", white background, 3d style, whole body, cartoon asset").images[0]
+    image = t2i_pipe(
+        prompt + ", white background, 3d style, whole body, cartoon asset",
+        negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
+            "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
+            "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
+            "Extra arms, extra legs, fused fingers, too many fingers, long neck",
+        guidance_scale=7.5, # Example value, adjust for desired output
+        num_inference_steps=25, # Example value, adjust for desired quality/speed).images[0]
+    ).images[0]
 
     # Run the pipeline
     try:
@@ -64,5 +72,5 @@ while cnt < 10 :
         validation_score = float(results_validation["score"])
         print(validation_score)
     cnt=cnt+1
-    print(torch.cuda.memory_allocated() / 1024**2, "MB allocated")
-    print(torch.cuda.memory_reserved() / 1024**2, "MB reserved")
+    print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
+    print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
