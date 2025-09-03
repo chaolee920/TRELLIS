@@ -5,7 +5,7 @@ os.environ['SPCONV_ALGO'] = 'native'
 from io import BytesIO
 
 from fastapi import FastAPI, Depends, Form
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
 import uvicorn
 import argparse
 from time import time
@@ -16,12 +16,12 @@ import torch
 from omegaconf import OmegaConf
 from loguru import logger
 
-# from trellis.pipelines import TrellisImageTo3DPipeline
-from trellis.pipelines import TrellisTextTo3DPipeline
+from trellis.pipelines import TrellisImageTo3DPipeline
+# from trellis.pipelines import TrellisTextTo3DPipeline
 from trellis.utils import render_utils, postprocessing_utils
 
-from diffusers import DiffusionPipeline
-from rembg import remove, new_session
+from diffusers import HunyuanDiTPipeline
+from rembg import remove
 
 
 def get_args():
@@ -35,15 +35,15 @@ def get_args():
 args = get_args()
 app = FastAPI()
 
-# pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
-pipeline = TrellisTextTo3DPipeline.from_pretrained("/workspace/vol_sub17/models/TRELLIS-text-xlarge")
+pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
+# pipeline = TrellisTextTo3DPipeline.from_pretrained("/workspace/vol_sub17/models/TRELLIS-text-xlarge")
 pipeline.cuda()
 
-# t2i_pipe = DiffusionPipeline.from_pretrained("Tencent-Hunyuan/HunyuanDiT-v1.1-Diffusers-Distilled", torch_dtype=torch.float16).to("cuda")
+t2i_pipe = HunyuanDiTPipeline.from_pretrained("Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled", torch_dtype=torch.float16).to("cuda:1")
 
-# t2i_pipe.transformer = t2i_pipe.transformer.half()
-# t2i_pipe.vae = t2i_pipe.vae.half()
-# t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
+t2i_pipe.transformer = t2i_pipe.transformer.half()
+t2i_pipe.vae = t2i_pipe.vae.half()
+t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
 def get_config() -> OmegaConf:
     config = OmegaConf.load(args.config)
@@ -68,45 +68,51 @@ async def generate(
     t0 = time()
     print("generation started")
 
-    # with torch.cuda.amp.autocast():
-    outputs = pipeline.run(prompt + "4k, white background, 3D style, best quality", seed=1)
-#         image = t2i_pipe(prompt + ", 4k, white background, 3D style, best quality", negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
-# "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
-# "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
-# "Extra arms, extra legs, fused fingers, too many fingers, long neck", num_inference_steps=20,  guidance_scale=3.5).images[0]
+    with torch.cuda.amp.autocast():
+    # outputs = pipeline.run(prompt + "4k, white background, 3D style, best quality", seed=1)
+        image = t2i_pipe(
+            prompt + ", white background, 3d style, whole body, cartoon asset",
+            negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
+                    "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
+                    "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
+                    "Extra arms, extra legs, fused fingers, too many fingers, long neck",
+            guidance_scale=7.5, # Example value, adjust for desired output
+            num_inference_steps=25, # Example value, adjust for desired quality/speed
+        ).images[0]
+        
+        image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
 
-#     image = remove(image, session=new_session(), bgcolor=[255, 255, 255, 0])
+        image = image.resize((512, 512))
+        
+        # Run the pipeline
+        try:
+            outputs = pipeline.run(image,seed=1,
+                sparse_structure_sampler_params={
+                    "steps": 30,
+                    "cfg_strength": 8,
+                },
+                slat_sampler_params={
+                    "steps": 30,
+                    "cfg_strength": 4,
+                }
+            )
+        except ValueError:  #raised if `y` is empty.
+            logger.error("Generation failed, try again.")
+            return None
 
-#     outputs = pipeline.run(image, seed=1,
-# # Optional parameters
-# #    sparse_structure_sampler_params={
-# #        "steps": 25,
-# #        "cfg_strength": 6.0,
-# #	"cfg_interval": [0.5, 0.95],
-# #        "rescale_t": 3.0
-# #    },
-# #    slat_sampler_params={
-# #        "steps": 25,
-# #        "cfg_strength": 7.5,
-# #        "cfg_interval": [0.5, 0.95],
-# #        "rescale_t": 3.0
-# #    },
-#     )
+        print("generation ended")
+        t1 = time()
+        print(f" Generation took: {(t1 - t0) / 60.0} min")
 
-    print("generation ended")
-    t1 = time()
-    print(f" Generation took: {(t1 - t0) / 60.0} min")
+        buffer = BytesIO()
+        outputs['gaussian'][0].save_ply(buffer)
+        print("saved")
+        buffer.seek(0)
+        buffer = buffer.getbuffer()
+        t2 = time()
+        print(f" Saving and encoding took: {(t2 - t1) / 60.0} min")
 
-    buffer = BytesIO()
-    outputs['gaussian'][0].save_ply(buffer)
-    outputs['gaussian'][0].save_ply('/workspace/vol_sub17/test-ply/result.ply')
-    print("saved")
-    buffer.seek(0)
-    buffer = buffer.getbuffer()
-    t2 = time()
-    print(f" Saving and encoding took: {(t2 - t1) / 60.0} min")
-
-    return Response(buffer, media_type="application/octet-stream")
+        return Response(buffer, media_type="application/octet-stream")
 
 
 @app.post("/generate_video/")
