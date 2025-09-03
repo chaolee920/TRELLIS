@@ -6,11 +6,10 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
 import torch
 
 from diffusers import HunyuanDiTPipeline
-from diffusers import BitsAndBytesConfig, SD3Transformer2DModel
-from transformers import pipeline
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
+from rembg import remove
 
 
 # You may also use English prompt as HunyuanDiT supports both English and Chinese
@@ -37,7 +36,19 @@ cnt = 0
 while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
-    image = t2i_pipe(prompt + ", white background, 3d style, game asset").images[0]
+    image = t2i_pipe(
+        prompt + ", white background, 3d style, whole body, cartoon asset",
+        negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
+                "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
+                "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
+                "Extra arms, extra legs, fused fingers, too many fingers, long neck",
+        guidance_scale=7.5, # Example value, adjust for desired output
+        num_inference_steps=25, # Example value, adjust for desired quality/speed
+    ).images[0]
+
+    image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
+
+    image.resize((512, 512))
 
     # Run the pipeline
     try:
