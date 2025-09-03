@@ -8,7 +8,7 @@ def decompress_spz_files(csv_path, output_dir):
     os.makedirs(ply_dir, exist_ok=True)
     
     for idx, row in df.iterrows():
-        spz_path = f"{row['model_path']}/assets/"
+        spz_path = f"/assets/{row['model_path']}"
         ply_path = os.path.join(ply_dir, f"{row['uid']}.ply")
         try:
             with open(spz_path, 'rb') as f:
