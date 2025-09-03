@@ -19,10 +19,10 @@ torch.cuda.empty_cache()
 
 model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 
-t2i_pipe = nn.DataParallel(HunyuanDiTPipeline.from_pretrained(
+t2i_pipe = HunyuanDiTPipeline.from_pretrained(
     model_id, 
     dtype=torch.float16
-)).to("cuda")
+).to("cuda")
 
 # t2i_pipe.transformer = t2i_pipe.transformer.half()
 # t2i_pipe.vae = t2i_pipe.vae.half()
