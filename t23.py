@@ -16,7 +16,7 @@ from rembg import remove, new_session
 torch.cuda.empty_cache()
 
 print("A")
-pipe = DiffusionPipeline.from_pretrained("Tencent-Hunyuan/HunyuanDiT-v1.1-Diffusers-Distilled", torch_dtype=torch.float16).to("cuda")
+pipe = DiffusionPipeline.from_pretrained("Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled", dtype=torch.float16).to("cuda")
 
 pipe.transformer = pipe.transformer.half()
 pipe.vae = pipe.vae.half()

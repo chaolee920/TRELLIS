@@ -1,7 +1,7 @@
 from PIL import Image
 import torch
 from diffusers import DiffusionPipeline
-from rembg import remove, new_session
+from rembg import remove
 
 # model_id = "stabilityai/stable-diffusion-2"
 model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
