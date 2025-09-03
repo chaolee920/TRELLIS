@@ -14,7 +14,7 @@ torch.cuda.empty_cache()
 pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
 pipeline.cuda()
 
-prompts_file = open("/workspace/vol_sub17/prompts.txt", "r")
+prompts_file = open("/workspace/logs/prompts.txt", "r")
 cnt = 0
 while cnt < 10 :
     prompt = prompts_file.readline()
