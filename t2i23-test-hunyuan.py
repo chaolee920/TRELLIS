@@ -17,7 +17,7 @@ model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 t2i_pipe = HunyuanDiTPipeline.from_pretrained(
     model_id,
     dtype=torch.float16,
-    device_map="auto"
+    device_map="balanced"  # Or "auto" or {"": int} to set the device for each submodule manually.
 )
 
 t2i_pipe.transformer = t2i_pipe.transformer.half()
