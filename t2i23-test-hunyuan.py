@@ -20,7 +20,11 @@ t2i_pipe = HunyuanDiTPipeline.from_pretrained(
     device_map="balanced"  # Or "auto" or {"": int} to set the device for each submodule manually.
 )
 
-i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large").cuda()
+t2i_pipe.transformer = t2i_pipe.transformer.to("cuda:1")
+t2i_pipe.vae = t2i_pipe.vae.to("cuda:2")
+t2i_pipe.text_encoder = t2i_pipe.text_encoder.to("cuda:2")
+
+i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large").to("cuda:3")
 
 prompts_file = open("/workspace/logs/prompts.txt", "r")
 cnt = 0
