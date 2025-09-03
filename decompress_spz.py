@@ -24,7 +24,7 @@ def decompress_spz_files(csv_path, output_dir):
     return df
 
 if __name__ == "__main__":
-    csv_path = "datasets/404mini/404mini_100.csv"
+    csv_path = "datasets/404mini/404mini.csv"
     output_dir = "datasets/404mini"
     try:
         df = decompress_spz_files(csv_path, output_dir)
