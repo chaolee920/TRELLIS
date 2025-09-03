@@ -4,6 +4,7 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
                                             # 'auto' is faster but will do benchmarking at the beginning.
                                             # Recommended to set to 'native' if run only once.
 import torch
+import torch.nn as nn
 from trellis.pipelines import TrellisTextTo3DPipeline
 import pybase64
 import requests
@@ -11,7 +12,7 @@ import requests
 torch.cuda.empty_cache()
 
 
-pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
+pipeline = nn.DataParallel(TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge"))
 pipeline.cuda()
 
 prompts_file = open("/workspace/logs/prompts.txt", "r")
