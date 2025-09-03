@@ -16,7 +16,11 @@ prompt = input()
 
 image = t2i_pipe(
     prompt + ", white background, 3d style, best quality, high resolution",
-    guidance_scale=15, # Example value, adjust for desired output
+    negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
+            "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
+            "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
+            "Extra arms, extra legs, fused fingers, too many fingers, long neck",
+    guidance_scale=6.0, # Example value, adjust for desired output
     num_inference_steps=25, # Example value, adjust for desired quality/speed
 ).images[0]
 
