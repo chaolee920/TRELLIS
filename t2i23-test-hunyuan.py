@@ -28,7 +28,7 @@ t2i_pipe.transformer = t2i_pipe.transformer.half()
 t2i_pipe.vae = t2i_pipe.vae.half()
 t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
-i23_pipeline = nn.DataParallel(TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large"))
+i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 i23_pipeline.cuda()
 
 prompts_file = open("/workspace/logs/prompts.txt", "r")
