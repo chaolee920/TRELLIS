@@ -39,7 +39,7 @@ while cnt < 300 :
     # Generate images for each angle
     for angle in angles:
         # Combine base prompt with angle description
-        full_prompt = f"{prompt}, {angle}, white background, 3d style, best quality, high resolution"
+        full_prompt = f"{prompt}, {angle}, white background, 3d style, whole body, cartoon asset"
 
         # Generate image
         image = t2i_pipe(

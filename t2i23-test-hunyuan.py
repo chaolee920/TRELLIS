@@ -48,7 +48,7 @@ while cnt < 10 :
 
     image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
 
-    image.resize((512, 512))
+    image = image.resize((512, 512))
 
     # Run the pipeline
     try:

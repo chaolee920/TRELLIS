@@ -33,7 +33,7 @@ cnt = 0
 while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
-    image = t2i_pipe(prompt + ", white background, 3d style, game asset").images[0]
+    image = t2i_pipe(prompt + ", white background, 3d style, whole body, cartoon asset").images[0]
 
     # Run the pipeline
     try:
