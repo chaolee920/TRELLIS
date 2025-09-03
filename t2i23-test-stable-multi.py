@@ -29,7 +29,7 @@ angles = ["front view", "side view", "back view"]
 i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 i23_pipeline.cuda()
 
-prompts_file = open("/workspace/logs/prompts.txt", "r")
+prompts_file = open("/workspace/prompts.txt", "r")
 cnt = 0
 while cnt < 300 :
     torch.cuda.empty_cache()

@@ -5,9 +5,7 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
                                             # Recommended to set to 'native' if run only once.
 import torch
 
-from diffusers import DiffusionPipeline,StableDiffusion3Pipeline
-from diffusers import BitsAndBytesConfig, SD3Transformer2DModel
-from transformers import pipeline
+from diffusers import DiffusionPipeline
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests

@@ -4,32 +4,39 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
                                             # 'auto' is faster but will do benchmarking at the beginning.
                                             # Recommended to set to 'native' if run only once.
 import torch
-import torch.nn as nn
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
 from diffusers import HunyuanDiTPipeline
+from accelerate import Accelerator
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
 from rembg import remove
 
+# Initialize the process group
+dist.init_process_group(backend='nccl')  # NCCL is recommended for NVIDIA GPUs
+local_rank = int(os.environ['LOCAL_RANK'])
+torch.cuda.set_device(local_rank)
 
-# You may also use English prompt as HunyuanDiT supports both English and Chinese
-# prompt = "An astronaut riding a horse"
+# Initialize Accelerator for multi-GPU setup
+accelerator = Accelerator()
 
 torch.cuda.empty_cache()
 
 model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 
-t2i_pipe = HunyuanDiTPipeline.from_pretrained(
-    model_id, 
+t2i_pipe = accelerator.prepare(HunyuanDiTPipeline.from_pretrained(
+    model_id,
     dtype=torch.float16
-).to("cuda:1")
+)).to("cuda")
 
-t2i_pipe.transformer = t2i_pipe.transformer.half()
-t2i_pipe.vae = t2i_pipe.vae.half()
-t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
+# t2i_pipe.transformer = t2i_pipe.transformer.half()
+# t2i_pipe.vae = t2i_pipe.vae.half()
+# t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
-i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
+i23_pipeline = accelerator.prepare(TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large"))
 i23_pipeline.cuda()
+i23_pipeline = DDP(i23_pipeline, device_ids=[local_rank])
 
 prompts_file = open("/workspace/logs/prompts.txt", "r")
 cnt = 0
