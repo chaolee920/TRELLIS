@@ -27,7 +27,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
                 prompt = base_name.replace("_", " ")
                 
                 # Download .ply.spz
-                spz_path = os.path.join(spz_dir, f"{base_name}.ply.spz")
+                spz_path = os.path.join(spz_dir, "/assets/", f"{base_name}.ply.spz")
                 hf_hub_download(repo_id=repo_id, filename=ply_file, repo_type="dataset", local_dir=spz_dir)
                 
                 # Check for .png (optional)
