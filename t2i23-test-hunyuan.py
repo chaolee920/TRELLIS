@@ -19,9 +19,8 @@ accelerator = Accelerator()
 
 t2i_pipe = HunyuanDiTPipeline.from_pretrained(
     model_id,
-    dtype=torch.float16,
-    device_map="balanced"  # Or "auto" or {"": int} to set the device for each submodule manually.
-)
+    dtype=torch.float16
+).to("cuda:1")
 
 t2i_pipe = accelerator.prepare(t2i_pipe)
 
@@ -52,7 +51,7 @@ while cnt < 10 :
 
     # Run the pipeline
     try:
-        outputs = i23_pipeline.run(image,seed=1,
+        outputs = i23_pipeline(image,seed=1,
             sparse_structure_sampler_params={
                 "steps": 30,
                 "cfg_strength": 8,
