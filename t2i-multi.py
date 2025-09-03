@@ -23,7 +23,7 @@ for angle in angles:
     image = t2i_pipe(
         full_prompt,
         num_inference_steps=25,
-        guidance_scale=7.5
+        guidance_scale=50
     ).images[0]
 
     image = remove(image, session=rembg_session)
