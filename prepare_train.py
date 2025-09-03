@@ -3,10 +3,12 @@ import os
 import pandas as pd
 from datasets import Dataset
 
-def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini/assets", max_samples=20):
+def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini", max_samples=100):
     os.makedirs(output_dir, exist_ok=True)
     spz_dir = os.path.join(output_dir, "spz")
+    render_dir = os.path.join(output_dir, "renders")
     os.makedirs(spz_dir, exist_ok=True)
+    os.makedirs(render_dir, exist_ok=True)
     
     # Get list of files
     files = list_repo_files(repo_id=repo_id, repo_type="dataset")
@@ -15,12 +17,12 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
     png_files = [f for f in files if f.endswith(".png") and f.startswith("assets/")]
     
     data = []
-    for json_file in json_files[:max_samples]:
+    for json_file in json_files[:max_samples]:  # Limit to 100 examples
         try:
             base_name = os.path.splitext(os.path.basename(json_file))[0]
-            category = json_file.split('/')[1]  # e.g., 'an'
-            ply_file = f"assets/{base_name}.ply.spz"
-            png_file = f"assets/{base_name}.png"
+            category = json_file.split('/')[1]
+            ply_file = f"assets/{category}/{base_name}.ply.spz"
+            png_file = f"assets/{category}/{base_name}.png"
             
             if ply_file in ply_files:
                 # Derive prompt from file name
@@ -30,18 +32,17 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
                 spz_path = os.path.join(spz_dir, f"{base_name}.ply.spz")
                 hf_hub_download(repo_id=repo_id, filename=ply_file, repo_type="dataset", local_dir=spz_dir)
                 
-                # Check for .png (optional)
+                # Download .png if available
                 render_path = None
                 if png_file in png_files:
-                    render_path = os.path.join(output_dir, "renders", f"{base_name}.png")
-                    os.makedirs(os.path.dirname(render_path), exist_ok=True)
-                    hf_hub_download(repo_id=repo_id, filename=png_file, repo_type="dataset", local_dir=os.path.dirname(render_path))
+                    render_path = os.path.join(render_dir, f"{base_name}.png")
+                    hf_hub_download(repo_id=repo_id, filename=png_file, repo_type="dataset", local_dir=render_dir)
                 
                 data.append({
                     "uid": base_name,
                     "name": base_name,
                     "source": "404mini",
-                    "captions": [prompt],
+                    "captions": [prompt],  # Optional for image-to-3D
                     "aesthetic_score": 5.0,
                     "model_path": spz_path,
                     "render_path": render_path
@@ -56,7 +57,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
     
     # Save metadata
     df = pd.DataFrame(data)
-    csv_path = os.path.join(output_dir, "404mini.csv")
+    csv_path = os.path.join(output_dir, "404mini_100.csv")
     df.to_csv(csv_path, index=False)
     dataset = Dataset.from_pandas(df)
     
@@ -66,7 +67,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
 
 if __name__ == "__main__":
     try:
-        dataset, csv_path = load_404mini_dataset(max_samples=20)
+        dataset, csv_path = load_404mini_dataset(max_samples=100)
         print(dataset[:5])
     except Exception as e:
         print(f"Error: {e}")
