@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from datasets import Dataset
 
-def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini", max_samples=100):
+def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini", max_samples=5):
     os.makedirs(output_dir, exist_ok=True)
     spz_dir = os.path.join(output_dir, "spz")
     render_dir = os.path.join(output_dir, "renders")
@@ -17,7 +17,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
     png_files = [f for f in files if f.endswith(".png") and f.startswith("assets/")]
     
     data = []
-    for json_file in json_files[:max_samples]:  # Limit to 100 examples
+    for json_file in json_files[:max_samples]:  # Limit to 5 examples
         try:
             base_name = os.path.splitext(os.path.basename(json_file))[0]
             category = json_file.split('/')[1]
@@ -57,7 +57,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
     
     # Save metadata
     df = pd.DataFrame(data)
-    csv_path = os.path.join(output_dir, "404mini_100.csv")
+    csv_path = os.path.join(output_dir, "404mini_5.csv")
     df.to_csv(csv_path, index=False)
     dataset = Dataset.from_pandas(df)
     
@@ -67,7 +67,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
 
 if __name__ == "__main__":
     try:
-        dataset, csv_path = load_404mini_dataset(max_samples=100)
+        dataset, csv_path = load_404mini_dataset(max_samples=5)
         print(dataset[:5])
     except Exception as e:
         print(f"Error: {e}")
