@@ -19,11 +19,11 @@ model_id = "stabilityai/stable-diffusion-2"
 t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
     dtype=torch.float16
-).to("cuda")
+).to("cuda:1")
 
-# t2i_pipe.unet = t2i_pipe.unet.half()
-# t2i_pipe.vae = t2i_pipe.vae.half()
-# t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
+t2i_pipe.unet = t2i_pipe.unet.half()
+t2i_pipe.vae = t2i_pipe.vae.half()
+t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
 i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 i23_pipeline.cuda()
