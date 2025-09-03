@@ -3,7 +3,8 @@ import torch
 from diffusers import DiffusionPipeline
 from rembg import remove, new_session
 
-model_id = "stabilityai/stable-diffusion-2"
+# model_id = "stabilityai/stable-diffusion-2"
+model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 
 t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
