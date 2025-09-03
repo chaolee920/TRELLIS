@@ -33,7 +33,7 @@ cnt = 0
 while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
-    image = t2i_pipe(
+    image = t2i_pipe.run(
         prompt + ", white background, 3d style, whole body, cartoon asset",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
                 "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
