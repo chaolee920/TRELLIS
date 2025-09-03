@@ -5,6 +5,7 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
                                             # Recommended to set to 'native' if run only once.
 import torch
 from diffusers import HunyuanDiTPipeline
+from accelerate import Accelerator
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
@@ -14,11 +15,15 @@ torch.cuda.empty_cache()
 
 model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 
+accelerator = Accelerator()
+
 t2i_pipe = HunyuanDiTPipeline.from_pretrained(
     model_id,
     dtype=torch.float16,
     device_map="balanced"  # Or "auto" or {"": int} to set the device for each submodule manually.
 )
+
+t2i_pipe = accelerator.prepare(t2i_pipe)
 
 t2i_pipe.transformer = t2i_pipe.transformer.to("cuda:1")
 t2i_pipe.vae = t2i_pipe.vae.to("cuda:2")
