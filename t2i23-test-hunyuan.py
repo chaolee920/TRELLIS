@@ -79,5 +79,5 @@ while cnt < 10 :
         validation_score = float(results_validation["score"])
         print(validation_score)
     cnt=cnt+1
-    print(torch.cuda.memory_allocated() / 1024**2, "MB allocated")
-    print(torch.cuda.memory_reserved() / 1024**2, "MB reserved")
+    print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
+    print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
