@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from datasets import Dataset
 
-def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini"):
+def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini", max_samples=100):
     os.makedirs(output_dir, exist_ok=True)
     spz_dir = os.path.join(output_dir, "spz")
     os.makedirs(spz_dir, exist_ok=True)
@@ -66,7 +66,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
 
 if __name__ == "__main__":
     try:
-        dataset, csv_path = load_404mini_dataset()
+        dataset, csv_path = load_404mini_dataset(max_samples=100)
         print(dataset[:5])
     except Exception as e:
         print(f"Error: {e}")
