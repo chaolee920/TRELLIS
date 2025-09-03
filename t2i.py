@@ -18,8 +18,8 @@ t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 prompt = input()
 
 image = t2i_pipe(
-    prompt + ", black background, 3d style, best quality, high resolution, whole , cartoon asset",
-    negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
+    prompt + ", white background, 3d style, whole body, cartoon asset",
+    negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
             "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
             "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
             "Extra arms, extra legs, fused fingers, too many fingers, long neck",
@@ -27,8 +27,7 @@ image = t2i_pipe(
     num_inference_steps=25, # Example value, adjust for desired quality/speed
 ).images[0]
 
-rembg_session = new_session('u2net')
-image = remove(image, session=rembg_session, bgcolor=[0, 0, 0, 0])
+image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
 
 image.resize((512, 512))
 
