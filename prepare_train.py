@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from datasets import Dataset
 
-def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini", max_samples=100):
+def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini", max_samples=20):
     os.makedirs(output_dir, exist_ok=True)
     spz_dir = os.path.join(output_dir, "spz")
     os.makedirs(spz_dir, exist_ok=True)
@@ -15,7 +15,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
     png_files = [f for f in files if f.endswith(".png") and f.startswith("assets/")]
     
     data = []
-    for json_file in json_files:
+    for json_file in json_files[:max_samples]:
         try:
             base_name = os.path.splitext(os.path.basename(json_file))[0]
             category = json_file.split('/')[1]  # e.g., 'an'
