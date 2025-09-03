@@ -11,7 +11,7 @@ import requests
 torch.cuda.empty_cache()
 
 
-pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge").to(torch.device("cuda:3"))
+pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge").cuda()
 
 prompts_file = open("/workspace/logs/prompts.txt", "r")
 cnt = 0
