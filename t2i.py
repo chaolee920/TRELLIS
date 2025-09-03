@@ -15,7 +15,7 @@ t2i_pipe = DiffusionPipeline.from_pretrained(
 prompt = input()
 
 image = t2i_pipe(
-    prompt + ", white background, 3d style, best quality, high resolution",
+    prompt + ", white background, 3d style, best quality, high resolution, whole body",
     negative_prompt="Text, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
             "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
             "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
@@ -26,5 +26,7 @@ image = t2i_pipe(
 
 rembg_session = new_session('u2net')
 image = remove(image, session=rembg_session)
+
+image.resize((512, 512))
 
 image.save(f"./output.png")
