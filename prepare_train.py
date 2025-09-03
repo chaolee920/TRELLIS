@@ -1,55 +1,61 @@
-# prepare_train.py
 from huggingface_hub import list_repo_files, hf_hub_download
-import json
 import os
-from datasets import Dataset
 import pandas as pd
+from datasets import Dataset
 
 def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini"):
-    # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     spz_dir = os.path.join(output_dir, "spz")
     os.makedirs(spz_dir, exist_ok=True)
     
-    # Get list of JSON files
+    # Get list of files
     files = list_repo_files(repo_id=repo_id, repo_type="dataset")
     json_files = [f for f in files if f.endswith(".json") and f.startswith("assets/")]
+    ply_files = [f for f in files if f.endswith(".ply.spz") and f.startswith("assets/")]
+    png_files = [f for f in files if f.endswith(".png") and f.startswith("assets/")]
     
-    # Process JSON files
     data = []
-    for file in json_files:
+    for json_file in json_files:
         try:
-            local_path = hf_hub_download(repo_id=repo_id, filename=file, repo_type="dataset")
-            with open(local_path, 'r') as f:
-                sample = json.load(f)
+            base_name = os.path.splitext(os.path.basename(json_file))[0]
+            category = json_file.split('/')[1]  # e.g., 'an'
+            ply_file = f"assets/{category}/{base_name}.ply.spz"
+            png_file = f"assets/{category}/{base_name}.png"
             
-            # Check for required fields
-            if 'prompt' in sample and 'model' in sample:
-                uid = os.path.basename(file).replace(".json", "")
-                spz_path = os.path.join(spz_dir, f"{uid}.ply.spz")
+            if ply_file in ply_files:
+                # Derive prompt from file name
+                prompt = base_name.replace("_", " ")
                 
-                # Save .ply.spz file
-                with open(spz_path, 'wb') as f:
-                    f.write(sample['model'])  # Assumes model is bytes; decode if base64 string
+                # Download .ply.spz
+                spz_path = os.path.join(spz_dir, f"{base_name}.ply.spz")
+                hf_hub_download(repo_id=repo_id, filename=ply_file, repo_type="dataset", local_dir=spz_dir)
+                
+                # Check for .png (optional)
+                render_path = None
+                if png_file in png_files:
+                    render_path = os.path.join(output_dir, "renders", f"{base_name}.png")
+                    os.makedirs(os.path.dirname(render_path), exist_ok=True)
+                    hf_hub_download(repo_id=repo_id, filename=png_file, repo_type="dataset", local_dir=os.path.dirname(render_path))
+                
                 data.append({
-                    "uid": uid,
-                    "name": uid,
+                    "uid": base_name,
+                    "name": base_name,
                     "source": "404mini",
-                    "captions": [sample['prompt']],
-                    "aesthetic_score": 5.0,  # Placeholder
+                    "captions": [prompt],
+                    "aesthetic_score": 5.0,
                     "model_path": spz_path,
-                    "render": sample.get('render', None)  # Optional
+                    "render_path": render_path
                 })
             else:
-                print(f"Skipping {file}: Missing 'prompt' or 'model'")
+                print(f"Skipping {json_file}: No matching .ply.spz")
         except Exception as e:
-            print(f"Error processing {file}: {e}")
+            print(f"Error processing {json_file}: {e}")
     
-    # Create Dataset and save metadata
+    if not data:
+        raise ValueError("No valid samples found with matching .ply.spz files")
+    
+    # Save metadata
     df = pd.DataFrame(data)
-    if len(df) == 0:
-        raise ValueError("No valid JSON files found with 'prompt' and 'model'")
-    
     csv_path = os.path.join(output_dir, "404mini.csv")
     df.to_csv(csv_path, index=False)
     dataset = Dataset.from_pandas(df)
@@ -61,6 +67,6 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
 if __name__ == "__main__":
     try:
         dataset, csv_path = load_404mini_dataset()
-        print(dataset[:5])  # Inspect first 5 samples
+        print(dataset[:5])
     except Exception as e:
         print(f"Error: {e}")
