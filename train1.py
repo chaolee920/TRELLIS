@@ -9,6 +9,7 @@ import torch.multiprocessing as mp
 import numpy as np
 import random
 import pandas as pd
+from transformers import AutoTokenizer
 
 # Placeholder for trellis imports (replace with actual imports if available)
 try:
@@ -30,7 +31,9 @@ class Custom404MiniDataset:
         # Add loads attribute for BalancedResumableSampler
         self.loads = list(range(len(self.df)))
         # Add value_range as tuple for trainer
-        self.value_range = (-1.0, 1.0)  # Tuple of floats
+        self.value_range = (-1.0, 1.0)
+        # Initialize tokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 
     def __len__(self):
         return len(self.df)
@@ -44,10 +47,13 @@ class Custom404MiniDataset:
         latent = torch.load(latent_path, weights_only=True)
         features = torch.load(feature_path, weights_only=True)
         caption = row['captions'][0] if isinstance(row['captions'], list) else row['captions']
+        # Tokenize caption
+        tokens = self.tokenizer(caption, return_tensors="pt", padding=True, truncation=True, max_length=128)
         return {
             'latent': latent,
             'features': features,
-            'caption': caption,
+            'caption': tokens['input_ids'].squeeze(0),  # [seq_len]
+            'attention_mask': tokens['attention_mask'].squeeze(0),  # [seq_len]
             'uid': row['uid']
         }
 
@@ -57,6 +63,7 @@ class Custom404MiniDataset:
         latents = [item['latent'] for item in batch]
         features = [item['features'] for item in batch]
         captions = [item['caption'] for item in batch]
+        attention_masks = [item['attention_mask'] for item in batch]
         uids = [item['uid'] for item in batch]
         
         try:
@@ -67,11 +74,15 @@ class Custom404MiniDataset:
             features = [torch.stack(f) if isinstance(f, list) else f for f in features]
         except:
             features = features
+        # Pad captions and attention masks
+        captions = torch.nn.utils.rnn.pad_sequence(captions, batch_first=True, padding_value=0)
+        attention_masks = torch.nn.utils.rnn.pad_sequence(attention_masks, batch_first=True, padding_value=0)
         
         return {
             'latent': latents,
             'features': features,
             'caption': captions,
+            'attention_mask': attention_masks,
             'uid': uids
         }
 
