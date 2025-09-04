@@ -396,7 +396,7 @@ main(args)
 **Run**:
 
 ```bash
-python dataset_toolkits/extract_features.py 404mini_100 --output_dir datasets/404mini --num_views 8
+python dataset_toolkits/extract_feature1.py 404mini_5 --output_dir datasets/404mini --num_views 8
 ```
 
 ##### 4. Voxelize, Encode Sparse Structure, and Encode SLAT
