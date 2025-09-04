@@ -63,7 +63,10 @@ class Custom404MiniDataset:
         except:
             latents = latents
         try:
-            features = [torch.stack(f) if isinstance(f, list) else f for f in features]
+            features = torch.stack([
+                torch.stack(f) if isinstance(f, list) else f.unsqueeze(0)
+                for f in features
+            ], dim=0)
         except:
             features = features
         input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=0).to(torch.int64)
