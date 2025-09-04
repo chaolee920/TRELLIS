@@ -64,7 +64,7 @@ class Custom404MiniDataset:
             latents = latents
         try:
             features = torch.stack([
-                torch.stack(f) if isinstance(f, list) else f.unsqueeze(0)
+                torch.cat(f, dim=0) if isinstance(f, list) else f  # cat views along dim=0
                 for f in features
             ], dim=0)
         except:
