@@ -28,7 +28,7 @@ class Custom404MiniDataset:
         self.latent_dir = os.path.join(data_dir, "latents")
         self.feature_dir = os.path.join(data_dir, "features")
         # Add loads attribute for BalancedResumableSampler
-        self.loads = list(range(len(self.df)))  # List of indices
+        self.loads = list(range(len(self.df)))
 
     def __len__(self):
         return len(self.df)
@@ -47,6 +47,32 @@ class Custom404MiniDataset:
             'features': features,
             'caption': caption,
             'uid': row['uid']
+        }
+
+    @staticmethod
+    def collate_fn(batch):
+        """Batch samples for data loader."""
+        latents = [item['latent'] for item in batch]
+        features = [item['features'] for item in batch]
+        captions = [item['caption'] for item in batch]
+        uids = [item['uid'] for item in batch]
+        
+        # Stack latents and features if possible, else return as list
+        try:
+            latents = torch.stack(latents)
+        except:
+            latents = latents  # Keep as list if shapes vary
+        try:
+            # Assume features is a list of tensors per sample
+            features = [torch.stack(f) if isinstance(f, list) else f for f in features]
+        except:
+            features = features
+        
+        return {
+            'latent': latents,
+            'features': features,
+            'caption': captions,
+            'uid': uids
         }
 
 def find_ckpt(cfg):
