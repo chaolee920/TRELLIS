@@ -148,18 +148,6 @@ def main(local_rank, cfg):
         else:
             print("Starting training...")
             try:
-                data_loader = torch.utils.data.DataLoader(
-                    dataset,
-                    # batch_size=cfg.batch_size,
-                    sampler=trainer.sampler,
-                    collate_fn=dataset.collate_fn,
-                    num_workers=cfg.get('num_workers', 128)
-                )
-                for batch in data_loader:
-                    print("Batch contents:")
-                    for key, value in batch.items():
-                        print(f"{key}: {type(value)}, {value.shape if isinstance(value, torch.Tensor) else [v.shape for v in value] if isinstance(value, list) else value}")
-                    break
                 trainer.run()
             except Exception as e:
                 print(f"Error in trainer.run(): {e}")
