@@ -11,7 +11,7 @@ import random
 import pandas as pd
 from transformers import AutoTokenizer
 
-# Placeholder for trellis imports (replace with actual imports if available)
+# Placeholder for trellis imports
 try:
     from trellis import models, trainers
     from trellis.utils.dist_utils import setup_dist
@@ -72,6 +72,14 @@ class Custom404MiniDataset:
             features = features
         input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=0).to(torch.int64)
         attention_masks = torch.nn.utils.rnn.pad_sequence(attention_masks, batch_first=True, padding_value=0).to(torch.int64)
+        
+        # Debug prints
+        print("Collated batch:")
+        print(f"Latents: {type(latents)}, shapes: {[l.shape for l in latents] if isinstance(latents, list) else latents.shape}")
+        print(f"Features: {type(features)}, shapes: {[f.shape for f in features] if isinstance(features, list) else features.shape}")
+        print(f"Input IDs: {input_ids.shape}, dtype: {input_ids.dtype}")
+        print(f"Attention Masks: {attention_masks.shape}, dtype: {attention_masks.dtype}")
+        print(f"UIDs: {uids}")
         
         return {
             'latent': latents,
