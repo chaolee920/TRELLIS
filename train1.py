@@ -127,16 +127,19 @@ def get_model_summary(model):
     return model_summary
 
 def main(local_rank, cfg):
+    print("A")
     rank = cfg.node_rank * cfg.num_gpus + local_rank
     world_size = cfg.num_nodes * cfg.num_gpus
     if world_size > 1 and setup_dist is not None:
         setup_dist(rank, local_rank, world_size, cfg.master_addr, cfg.master_port)
     setup_rng(rank)
+    print("B")
     dataset = Custom404MiniDataset(cfg.data_dir, dataset_name=cfg.dataset_name)
     model_dict = {
         name: getattr(models, model.name)(**model.args).cuda()
         for name, model in cfg.models.items()
     }
+    print("C")
     if rank == 0:
         for name, backbone in model_dict.items():
             model_summary = get_model_summary(backbone)
