@@ -37,6 +37,7 @@ def encode_slat_latent(feature_path, resolution=64):
         encoder.eval()
         with torch.no_grad():
             latent = encoder(feats.cuda())
+        latent = latent.mean(dim=0)  # average over views → shape (128,)
         return latent.cpu()
     except Exception as e:
         print(f"Error encoding {feature_path}: {e}")
