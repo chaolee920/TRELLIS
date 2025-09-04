@@ -27,6 +27,8 @@ class Custom404MiniDataset:
         self.df = pd.read_csv(self.csv_path)
         self.latent_dir = os.path.join(data_dir, "latents")
         self.feature_dir = os.path.join(data_dir, "features")
+        # Add loads attribute for BalancedResumableSampler
+        self.loads = list(range(len(self.df)))  # List of indices
 
     def __len__(self):
         return len(self.df)
@@ -89,7 +91,7 @@ def main(local_rank, cfg):
     # Set up distributed training
     rank = cfg.node_rank * cfg.num_gpus + local_rank
     world_size = cfg.num_nodes * cfg.num_gpus
-    if world_size > 1:
+    if world_size > 1 and setup_dist is not None:
         setup_dist(rank, local_rank, world_size, cfg.master_addr, cfg.master_port)
 
     # Seed rngs
