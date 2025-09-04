@@ -30,8 +30,12 @@ i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image
 i23_pipeline.cuda()
 
 prompts_file = open("/workspace/logs/prompts.txt", "r")
+
+for i in range(120):
+    prompts_file.readline()
+
 cnt = 0
-while cnt < 100 :
+while cnt < 200 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
     image = t2i_pipe(
