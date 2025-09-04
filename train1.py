@@ -29,6 +29,8 @@ class Custom404MiniDataset:
         self.feature_dir = os.path.join(data_dir, "features")
         # Add loads attribute for BalancedResumableSampler
         self.loads = list(range(len(self.df)))
+        # Add value_range for trainer
+        self.value_range = [-1, 1]  # Assume normalized latents/features
 
     def __len__(self):
         return len(self.df)
@@ -57,13 +59,11 @@ class Custom404MiniDataset:
         captions = [item['caption'] for item in batch]
         uids = [item['uid'] for item in batch]
         
-        # Stack latents and features if possible, else return as list
         try:
             latents = torch.stack(latents)
         except:
             latents = latents  # Keep as list if shapes vary
         try:
-            # Assume features is a list of tensors per sample
             features = [torch.stack(f) if isinstance(f, list) else f for f in features]
         except:
             features = features
