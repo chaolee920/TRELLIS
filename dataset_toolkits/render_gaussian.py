@@ -10,25 +10,25 @@ from gsplat import fully_fused_projection, rasterize_to_pixels, quat_scale_to_co
 def load_gaussian_splat(ply_path):
     """Load .ply file as Gaussian splat (points, colors, scales, rotations, opacities)."""
     pcd = o3d.io.read_point_cloud(ply_path)
-    points = np.asarray(pcd.points, dtype=np.float32)  # [N, 3]
-    colors = np.asarray(pcd.colors, dtype=np.float32)  # [N, 3]
+    points = np.ascontiguousarray(pcd.points, dtype=np.float32)  # Ensure contiguous
+    colors = np.ascontiguousarray(pcd.colors, dtype=np.float32)
     
     # Dummy scales, rotations, opacities
-    scales = np.ones((points.shape[0], 3), dtype=np.float32) * 0.01
-    rotations = np.zeros((points.shape[0], 4), dtype=np.float32)
+    scales = np.ascontiguousarray(np.ones((points.shape[0], 3), dtype=np.float32) * 0.01)
+    rotations = np.ascontiguousarray(np.zeros((points.shape[0], 4), dtype=np.float32))
     rotations[:, 0] = 1.0  # Identity quaternion
-    opacities = np.ones((points.shape[0], 1), dtype=np.float32) * 0.9
+    opacities = np.ascontiguousarray(np.ones((points.shape[0], 1), dtype=np.float32) * 0.9)
     
     # Compute covariances
     covars, _ = quat_scale_to_covar_preci(rotations, scales)
     
     return (
-        torch.tensor(points, device='cuda', dtype=torch.float32),
-        torch.tensor(colors, device='cuda', dtype=torch.float32),
-        torch.tensor(covars, device='cuda', dtype=torch.float32),
-        torch.tensor(rotations, device='cuda', dtype=torch.float32),
-        torch.tensor(scales, device='cuda', dtype=torch.float32),
-        torch.tensor(opacities, device='cuda', dtype=torch.float32)
+        torch.tensor(points, device='cuda', dtype=torch.float32).contiguous(),
+        torch.tensor(colors, device='cuda', dtype=torch.float32).contiguous(),
+        torch.tensor(covars, device='cuda', dtype=torch.float32).contiguous(),
+        torch.tensor(rotations, device='cuda', dtype=torch.float32).contiguous(),
+        torch.tensor(scales, device='cuda', dtype=torch.float32).contiguous(),
+        torch.tensor(opacities, device='cuda', dtype=torch.float32).contiguous()
     )
 
 def compute_view_matrix(azimuth, elevation, radius):
@@ -51,7 +51,7 @@ def compute_view_matrix(azimuth, elevation, radius):
         [z_axis[0], z_axis[1], z_axis[2], -np.dot(z_axis, eye)],
         [0, 0, 0, 1]
     ])
-    return torch.tensor(view_matrix, device='cuda', dtype=torch.float32)
+    return torch.tensor(view_matrix, device='cuda', dtype=torch.float32).contiguous()
 
 def compute_intrinsics(fovy, width, height):
     """Compute camera intrinsics matrix (K)."""
@@ -64,7 +64,7 @@ def compute_intrinsics(fovy, width, height):
         [0, fy, cy],
         [0, 0, 1]
     ])
-    return torch.tensor(K, device='cuda', dtype=torch.float32)
+    return torch.tensor(K, device='cuda', dtype=torch.float32).contiguous()
 
 def render_gaussian_splat(ply_path, output_dir, num_views=8):
     """Render multiview images from Gaussian splat .ply file."""
@@ -104,8 +104,8 @@ def render_gaussian_splat(ply_path, output_dir, num_views=8):
             depths=depths,
             radii=radii,
             conics=conics,
-            colors=colors.repeat(num_views, 1, 1),  # Broadcast colors
-            opacities=opacities.repeat(num_views, 1, 1),  # Broadcast opacities
+            colors=colors.repeat(num_views, 1, 1),
+            opacities=opacities.repeat(num_views, 1, 1),
             img_height=height,
             img_width=width
         )  # Shape: [num_views, H, W, 3]
