@@ -441,8 +441,14 @@ Configure TRELLIS for image-to-3D fine-tuning and train on the 100 examples.
      --ckpt latest \
      --num_gpus 1
    ```
-
-**Notes**:
+   python train.py \
+    --config configs/generation/slat_flow_img_dit_L_64l8p2_fp16.json \
+    --output_dir outputs/finetune_404mini_image_5 \
+    --data_dir datasets/404mini \
+    --load_dir /workspace/.hf_home/hub/models--microsoft--TRELLIS-image-large/snapshots/25e0d31ffbebe4b5a97464dd851910efc3002d96 \
+    --ckpt latest \
+    --num_gpus 1 \
+   **Notes**:
 
 - Use `--batch_size 4` or `--gradient_accumulation_steps 2` for RTX 4090 to manage VRAM.
 - For A100, increase batch size to 8–16.
