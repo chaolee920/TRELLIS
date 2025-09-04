@@ -85,8 +85,7 @@ class Custom404MiniDataset:
             'latent': latents,
             'features': features,
             'input_ids': input_ids,
-            'attention_mask': attention_masks,
-            'uid': uids
+            'attention_mask': attention_masks
         }
 
 def find_ckpt(cfg):
