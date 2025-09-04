@@ -45,6 +45,7 @@ class Custom404MiniDataset:
         features = torch.load(feature_path, weights_only=True)
         caption = row['captions'][0] if isinstance(row['captions'], list) else row['captions']
         tokens = self.tokenizer(caption, return_tensors="pt", padding=True, truncation=True, max_length=128)
+        print("D")
         return {
             'latent': latent,
             'features': features,
