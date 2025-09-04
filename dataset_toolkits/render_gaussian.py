@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from PIL import Image
 import open3d as o3d
-from gsplat import project_gaussians, rasterize_gaussians  # Correct gsplat API
+from gsplat import rasterize_to_pixels, fully_fused_projection
 
 def load_gaussian_splat(ply_path):
     """Load .ply file as Gaussian splat (points, colors, scales, rotations, opacities)."""
@@ -14,10 +14,10 @@ def load_gaussian_splat(ply_path):
     colors = np.asarray(pcd.colors, dtype=np.float32)  # [N, 3]
     
     # Dummy scales, rotations, opacities (adjust if .ply includes them)
-    scales = np.ones((points.shape[0], 3), dtype=np.float32) * 0.01  # Small isotropic scale
-    rotations = np.zeros((points.shape[0], 4), dtype=np.float32)  # Quaternions: [1, 0, 0, 0]
+    scales = np.ones((points.shape[0], 3), dtype=np.float32) * 0.01
+    rotations = np.zeros((points.shape[0], 4), dtype=np.float32)
     rotations[:, 0] = 1.0  # Identity quaternion
-    opacities = np.ones((points.shape[0], 1), dtype=np.float32) * 0.9  # High opacity
+    opacities = np.ones((points.shape[0], 1), dtype=np.float32) * 0.9
     
     return (
         torch.tensor(points, device='cuda', dtype=torch.float32),
@@ -28,14 +28,13 @@ def load_gaussian_splat(ply_path):
     )
 
 def compute_view_matrix(azimuth, elevation, radius):
-    """Compute camera view matrix for given azimuth, elevation, radius."""
+    """Compute camera view matrix."""
     azimuth = np.deg2rad(azimuth)
     elevation = np.deg2rad(elevation)
     x = radius * np.cos(elevation) * np.cos(azimuth)
     y = radius * np.cos(elevation) * np.sin(azimuth)
     z = radius * np.sin(elevation)
     
-    # Simple look-at matrix (camera at [x, y, z], looking at origin)
     eye = np.array([x, y, z])
     target = np.array([0, 0, 0])
     up = np.array([0, 0, 1])
@@ -67,36 +66,42 @@ def render_gaussian_splat(ply_path, output_dir, num_views=8):
     
     height, width = 256, 256
     fovy = np.deg2rad(45)
+    fx = width / (2 * np.tan(fovy / 2))
+    fy = height / (2 * np.tan(fovy / 2))
     
     for view_idx in range(num_views):
         azimuth = view_idx * 360.0 / num_views
         view_matrix = compute_view_matrix(azimuth=azimuth, elevation=0, radius=2.0)
         proj_matrix = compute_perspective_matrix(fovy, width/height, near=0.1, far=100.0)
         
-        # Project and rasterize Gaussians
-        means2D, depths, radii, conics, comp, num_tiles_hit, cov3d = project_gaussians(
-            means3D=points,
+        # Project Gaussians
+        xys, depths, radii, conics, comp, num_tiles_hit, cov3ds = fully_fused_projection(
+            means=points,
             scales=scales,
-            rotations=rotations,
+            quats=rotations,
             view_matrix=view_matrix,
-            proj_matrix=proj_matrix,
-            fovy=fovy,
-            im_width=width,
-            im_height=height
+            fx=fx,
+            fy=fy,
+            cx=width / 2,
+            cy=height / 2,
+            img_height=height,
+            img_width=width
         )
-        image = rasterize_gaussians(
-            means2D=means2D,
+        
+        # Rasterize to pixels
+        image, _ = rasterize_to_pixels(
+            xys=xys,
             depths=depths,
             radii=radii,
             conics=conics,
             colors=colors,
             opacities=opacities,
-            im_width=width,
-            im_height=height
+            img_height=height,
+            img_width=width
         )  # Shape: [H, W, 3]
         
         # Convert to PIL Image and save
-        image = image.cpu().numpy().astype(np.uint8)
+        image = (image.cpu().numpy() * 255).astype(np.uint8)
         Image.fromarray(image).save(os.path.join(output_dir, f"view_{view_idx}.png"))
 
 def main(args):
