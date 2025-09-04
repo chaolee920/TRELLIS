@@ -150,7 +150,7 @@ def main(local_rank, cfg):
             try:
                 data_loader = torch.utils.data.DataLoader(
                     dataset,
-                    batch_size=cfg.batch_size,
+                    # batch_size=cfg.batch_size,
                     sampler=trainer.sampler,
                     collate_fn=dataset.collate_fn,
                     num_workers=cfg.get('num_workers', 128)
