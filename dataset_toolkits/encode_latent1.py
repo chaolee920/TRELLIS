@@ -7,7 +7,7 @@ import spconv.pytorch as spconv
 
 class SimpleSLATEncoder(nn.Module):
     """Placeholder SLAT encoder for sparse tensors."""
-    def __init__(self, input_channels=384, latent_dim=128):  # Adjust for DINO features
+    def __init__(self, input_channels=384, latent_dim=128):  # DINO-vits16: 384 channels
         super().__init__()
         self.conv = spconv.SparseSequential(
             spconv.SparseConv3d(input_channels, 32, kernel_size=3, stride=1, padding=1),
@@ -31,9 +31,8 @@ def encode_slat_latent(feature_path, resolution=64):
         
         # Convert to sparse tensor
         num_views = len(features)
-        feats = torch.stack(features, dim=0).mean(dim=(2, 3)).squeeze()  # [num_views, C]
-        if feats.dim() == 1:  # Handle single view case
-            feats = feats.unsqueeze(0)
+        feats = torch.stack(features, dim=0)  # [num_views, C, H, W]
+        feats = feats.view(num_views, feats.size(1), -1).mean(dim=2)  # [num_views, C]
         
         indices = torch.zeros((num_views, 4), dtype=torch.int32, device='cuda')  # [num_views, 4]
         for i in range(num_views):
@@ -47,7 +46,7 @@ def encode_slat_latent(feature_path, resolution=64):
         )
         
         # Encode with placeholder encoder
-        encoder = SimpleSLATEncoder(input_channels=feats.shape[-1]).cuda()
+        encoder = SimpleSLATEncoder(input_channels=feats.shape[1]).cuda()
         encoder.eval()
         with torch.no_grad():
             latent = encoder(sparse_tensor)
