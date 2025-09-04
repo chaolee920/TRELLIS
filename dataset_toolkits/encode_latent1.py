@@ -18,27 +18,32 @@ class SimpleSLATEncoder(nn.Module):
 def encode_slat_latent(feature_path, resolution=64):
     """Encode features into SLAT latent."""
     try:
-        # Load features (list of DINO features: [num_views, C, H, W])
         features = torch.load(feature_path, weights_only=True)
-        if not isinstance(features, list) or not features:
-            raise ValueError(f"Invalid or empty feature format: {feature_path}")
-        
-        # Convert to tensor
-        feats = torch.stack(features, dim=0)  # [num_views, C, H, W]
+
+        # Handle both old (list of tensors) and new (tensor) formats
+        if isinstance(features, list):
+            if not features:
+                raise ValueError(f"Empty feature list: {feature_path}")
+            feats = torch.stack(features, dim=0)  # [num_views, seq_len, hidden_dim]
+        elif isinstance(features, torch.Tensor):
+            feats = features  # already a tensor
+        else:
+            raise ValueError(f"Unsupported feature type: {type(features)} in {feature_path}")
+
         if not torch.isfinite(feats).all():
             raise ValueError(f"Non-finite values in features: {feature_path}")
-        
-        feats = feats.view(feats.size(0), feats.size(1), -1).mean(dim=2)  # [num_views, C]
-        if feats.shape[0] == 0:
-            raise ValueError(f"Empty features after mean: {feature_path}")
-        
-        # Simplified encoding (no sparse tensor to avoid spconv issues)
+
+        # Mean-pool across seq_len dimension if present
+        if feats.dim() == 3:  # [num_views, seq_len, hidden_dim]
+            feats = feats.mean(dim=1)  # -> [num_views, hidden_dim]
+
         encoder = SimpleSLATEncoder(input_channels=feats.shape[1]).cuda()
         encoder.eval()
         with torch.no_grad():
-            latent = encoder(feats.cuda())
-        latent = latent.mean(dim=0)  # average over views → shape (128,)
+            latent = encoder(feats.cuda())  # [num_views, latent_dim]
+        latent = latent.mean(dim=0)  # average over views -> [latent_dim]
         return latent.cpu()
+
     except Exception as e:
         print(f"Error encoding {feature_path}: {e}")
         return None
