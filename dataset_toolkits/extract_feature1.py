@@ -17,8 +17,11 @@ def main(args):
         features = []
         if row['render_path'] and os.path.exists(row['render_path']):
             img_path = row['render_path']
+            print(img_path)
             image = Image.open(img_path).convert("RGB")
             inputs = extractor(images=image, return_tensors="pt").to("cuda")
+            print("inputs : ")
+            print(inputs)
             with torch.no_grad():
                 outputs = model(**inputs)
             features.append(outputs.last_hidden_state.squeeze().cpu())

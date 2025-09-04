@@ -213,7 +213,7 @@ Check if `.png` files exist:
 
 ```python
 from datasets import Dataset
-dataset = Dataset.from_csv("datasets/404mini/404mini_100.csv")
+dataset = Dataset.from_csv("datasets/404mini/404mini_5.csv")
 print(dataset.filter(lambda x: x['render_path'] is not None).num_rows)
 ```
 
