@@ -201,7 +201,7 @@ Validate `404mini_100.csv`.
 **Run**:
 
 ```bash
-python dataset_toolkits/build_metadata.py 404mini_100 --output_dir datasets/404mini
+    python dataset_toolkits/build_metadata1.py 404mini_5 --output_dir datasets/404mini
 ```
 
 ##### 2. Render Multiview Images (Optional)
@@ -406,8 +406,8 @@ These steps are identical to text-to-3D, processing the 3D models.
 **Run**:
 
 ```bash
-python dataset_toolkits/voxelize.py 404mini_100 --output_dir datasets/404mini
-python dataset_toolkits/encode_ss_latent.py 404mini_100 --output_dir datasets/404mini
+python dataset_toolkits/voxelize1.py 404mini_5 --output_dir datasets/404mini
+python dataset_toolkits/encode_ss_latent.py 404mini_5 --output_dir datasets/404mini
 python dataset_toolkits/encode_latent.py 404mini_100 --output_dir datasets/404mini
 ```
 

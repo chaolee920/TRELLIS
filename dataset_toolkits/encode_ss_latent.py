@@ -84,14 +84,14 @@ if __name__ == '__main__':
     end = len(metadata) * (opt.rank + 1) // opt.world_size
     metadata = metadata[start:end]
     records = []
-    
+    print('A')
     # filter out objects that are already processed
     sha256s = list(metadata['sha256'].values)
     for sha256 in copy.copy(sha256s):
         if os.path.exists(os.path.join(opt.output_dir, 'ss_latents', latent_name, f'{sha256}.npz')):
             records.append({'sha256': sha256, f'ss_latent_{latent_name}': True})
             sha256s.remove(sha256)
-
+    print('B')
     # encode latents
     load_queue = Queue(maxsize=4)
     try:

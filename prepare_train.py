@@ -3,12 +3,23 @@ import os
 import pandas as pd
 from datasets import Dataset
 
-def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini", max_samples=5):
+def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini", max_samples=None, log_file="download_log.txt"):
     os.makedirs(output_dir, exist_ok=True)
     spz_dir = os.path.join(output_dir, "spz")
     render_dir = os.path.join(output_dir, "renders")
     os.makedirs(spz_dir, exist_ok=True)
     os.makedirs(render_dir, exist_ok=True)
+    
+    # Load start point from log file
+    log_path = os.path.join(output_dir, log_file)
+    start_index = 0
+    if os.path.exists(log_path):
+        with open(log_path, 'r') as f:
+            try:
+                start_index = int(f.read().strip())
+                print(f"Resuming from index {start_index}")
+            except ValueError:
+                print("Invalid log file; starting from index 0")
     
     # Get list of files
     files = list_repo_files(repo_id=repo_id, repo_type="dataset")
@@ -16,8 +27,20 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
     ply_files = [f for f in files if f.endswith(".ply.spz") and f.startswith("assets/")]
     png_files = [f for f in files if f.endswith(".png") and f.startswith("assets/")]
     
-    data = []
-    for json_file in json_files[:max_samples]:  # Limit to 5 examples
+    # Limit to max_samples if specified
+    json_files = json_files[:max_samples] if max_samples is not None else json_files
+    print(f"Processing up to {len(json_files)} JSON files from index {start_index}")
+    
+    # Load existing CSV if it exists
+    csv_path = os.path.join(output_dir, f"404mini_{max_samples or 'full'}.csv")
+    if os.path.exists(csv_path):
+        df_existing = pd.read_csv(csv_path)
+        data = df_existing.to_dict('records')
+    else:
+        data = []
+    
+    # Process files starting from start_index
+    for i, json_file in enumerate(json_files[start_index:], start=start_index):
         try:
             base_name = os.path.splitext(os.path.basename(json_file))[0]
             category = json_file.split('/')[1]
@@ -25,34 +48,29 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
             png_file = f"assets/{category}/{base_name}.png"
             
             if ply_file in ply_files:
-                # Derive prompt from file name
                 prompt = base_name.replace("_", " ")
-                
-                # Download .ply.spz
-                spz_path = os.path.join(spz_dir, "assets", category, f"{base_name}.ply.spz")
+                spz_path = os.path.join(spz_dir, 'assets', category, f"{base_name}.ply.spz")
                 hf_hub_download(repo_id=repo_id, filename=ply_file, repo_type="dataset", local_dir=spz_dir)
                 
-                # Download .png if available
                 render_path = None
                 if png_file in png_files:
-                    render_path = os.path.join(render_dir, "assets", category,f"{base_name}.png")
+                    render_path = os.path.join(render_dir, 'assets', category,  f"{base_name}.png")
                     hf_hub_download(repo_id=repo_id, filename=png_file, repo_type="dataset", local_dir=render_dir)
-                # acoustic_bass_with_elegant_curves
-                # ,acoustic_bass_with_elegant_curves,
-                # 404mini,
-                # ['acoustic bass with elegant curves'],
-                # 5.0,
-                # datasets/404mini/spz/acoustic_bass_with_elegant_curves.ply.spz,
-                # datasets/404mini/renders/acoustic_bass_with_elegant_curves.png
+                
                 data.append({
                     "uid": base_name,
                     "name": base_name,
                     "source": "404mini",
-                    "captions": [prompt],  # Optional for image-to-3D
+                    "captions": [prompt],
                     "aesthetic_score": 5.0,
                     "model_path": spz_path,
                     "render_path": render_path
                 })
+                
+                # Update log file with current index
+                with open(log_path, 'w') as f:
+                    f.write(str(i + 1))
+                print(f"Processed {json_file}, updated log to index {i + 1}")
             else:
                 print(f"Skipping {json_file}: No matching .ply.spz")
         except Exception as e:
@@ -63,7 +81,6 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
     
     # Save metadata
     df = pd.DataFrame(data)
-    csv_path = os.path.join(output_dir, "404mini_5.csv")
     df.to_csv(csv_path, index=False)
     dataset = Dataset.from_pandas(df)
     
@@ -73,7 +90,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
 
 if __name__ == "__main__":
     try:
-        dataset, csv_path = load_404mini_dataset(max_samples=5)
+        dataset, csv_path = load_404mini_dataset(max_samples=1000)  # Set to 5 for 404mini_5.csv
         print(dataset[:5])
     except Exception as e:
         print(f"Error: {e}")
