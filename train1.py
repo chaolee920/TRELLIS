@@ -148,7 +148,6 @@ def main(local_rank, cfg):
         else:
             print("Starting training...")
             try:
-                # Debug batch processing
                 data_loader = torch.utils.data.DataLoader(
                     dataset,
                     batch_size=cfg.batch_size,
@@ -174,6 +173,7 @@ if __name__ == "__main__":
     parser.add_argument('--ckpt', type=str, default='latest')
     parser.add_argument('--data_dir', type=str, default='./data/')
     parser.add_argument('--dataset_name', type=str, default='404mini_5')
+    parser.add_argument('--batch_size', type=int, default=4)
     parser.add_argument('--auto_retry', type=int, default=3)
     parser.add_argument('--tryrun', action='store_true')
     parser.add_argument('--profile', action='store_true')

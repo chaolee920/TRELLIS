@@ -24,6 +24,7 @@
     "name": "Custom404MiniDataset",
     "args": {}
   },
+  "batch-size": 4,
   "trainer": {
     "name": "ImageConditionedSparseFlowMatchingCFGTrainer",
     "args": {
