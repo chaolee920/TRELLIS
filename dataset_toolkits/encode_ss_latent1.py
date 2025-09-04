@@ -5,16 +5,20 @@ import torch
 import spconv.pytorch as spconv
 
 def encode_sparse_structure(voxel_path, resolution=64):
-    """Encode voxel grid into sparse structural latent (e.g., octree or sparse tensor)."""
+    """Encode voxel grid into sparse structural latent."""
     try:
         # Load voxel grid
-        voxel_grid = torch.load(voxel_path)  # [resolution, resolution, resolution]
+        voxel_grid = torch.load(voxel_path, weights_only=True)  # [resolution, resolution, resolution]
         if voxel_grid.shape != (resolution, resolution, resolution):
             raise ValueError(f"Invalid voxel grid shape: {voxel_grid.shape}")
         
-        # Convert to sparse tensor (simplified; adjust for TRELLIS's specific encoding)
+        # Convert to sparse tensor
         indices = torch.nonzero(voxel_grid).long()  # [N, 3]
+        # Add batch dimension: [N, 3] -> [N, 4] with batch index 0
+        batch_indices = torch.zeros((indices.shape[0], 1), dtype=torch.long, device=indices.device)
+        indices = torch.cat([batch_indices, indices], dim=1)  # [N, 4]
         features = torch.ones((indices.shape[0], 1), dtype=torch.float32)  # Dummy features
+        
         sparse_tensor = spconv.SparseConvTensor(
             features=features,
             indices=indices,
@@ -22,8 +26,7 @@ def encode_sparse_structure(voxel_path, resolution=64):
             batch_size=1
         )
         
-        # Placeholder encoding (replace with TRELLIS-specific sparse encoding)
-        # Example: Octree or sparse convolution processing
+        # Placeholder for further encoding (e.g., octree or convolution)
         return sparse_tensor
     except Exception as e:
         print(f"Error encoding {voxel_path}: {e}")
