@@ -45,12 +45,21 @@ def main(args):
                     except Exception as e:
                         print(f"Error processing {img_path}: {e}")
         
+        # if features:
+        #     output_path = os.path.join(feature_dir, f"{row['uid']}.pt")
+        #     torch.save(features, output_path)
+        #     print(f"Saved features to {output_path}")
+        # else:
+        #     print(f"No images found for {row['uid']}") 
         if features:
+            # Stack into a single tensor: [num_views, seq_len, hidden_dim]
+            features = torch.stack(features, dim=0)
+
             output_path = os.path.join(feature_dir, f"{row['uid']}.pt")
             torch.save(features, output_path)
-            print(f"Saved features to {output_path}")
+            print(f"Saved features to {output_path}, shape {features.shape}")
         else:
-            print(f"No images found for {row['uid']}") 
+            print(f"No images found for {row['uid']}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
