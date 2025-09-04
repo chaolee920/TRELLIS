@@ -29,8 +29,8 @@ class Custom404MiniDataset:
         self.feature_dir = os.path.join(data_dir, "features")
         # Add loads attribute for BalancedResumableSampler
         self.loads = list(range(len(self.df)))
-        # Add value_range for trainer
-        self.value_range = [-1, 1]  # Assume normalized latents/features
+        # Add value_range as tuple for trainer
+        self.value_range = (-1.0, 1.0)  # Tuple of floats
 
     def __len__(self):
         return len(self.df)
