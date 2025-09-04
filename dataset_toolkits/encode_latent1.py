@@ -7,7 +7,7 @@ import spconv.pytorch as spconv
 
 class SimpleSLATEncoder(nn.Module):
     """Placeholder SLAT encoder for sparse tensors."""
-    def __init__(self, input_channels=1, latent_dim=128):
+    def __init__(self, input_channels=384, latent_dim=128):  # Adjust for DINO features
         super().__init__()
         self.conv = spconv.SparseSequential(
             spconv.SparseConv3d(input_channels, 32, kernel_size=3, stride=1, padding=1),
@@ -24,26 +24,30 @@ class SimpleSLATEncoder(nn.Module):
 def encode_slat_latent(feature_path, resolution=64):
     """Encode features into SLAT latent."""
     try:
-        # Load features (list of DINO features from extract_features.py)
-        features = torch.load(feature_path, weights_only=True)  # List of [C, H, W]
+        # Load features (list of DINO features: [num_views, C, H, W])
+        features = torch.load(feature_path, weights_only=True)
         if not isinstance(features, list):
             raise ValueError(f"Invalid feature format: {feature_path}")
         
-        # Convert to sparse tensor (simplified; assumes features are patch tokens)
-        indices = torch.zeros((len(features), 4), dtype=torch.int32, device='cuda')  # [N, 4]
-        for i in range(len(features)):
+        # Convert to sparse tensor
+        num_views = len(features)
+        feats = torch.stack(features, dim=0).mean(dim=(2, 3)).squeeze()  # [num_views, C]
+        if feats.dim() == 1:  # Handle single view case
+            feats = feats.unsqueeze(0)
+        
+        indices = torch.zeros((num_views, 4), dtype=torch.int32, device='cuda')  # [num_views, 4]
+        for i in range(num_views):
             indices[i, 0] = i  # Batch index
-        feats = torch.stack(features, dim=0).mean(dim=(2, 3))  # [N, C]
         
         sparse_tensor = spconv.SparseConvTensor(
-            features=feats,
+            features=feats.cuda(),
             indices=indices,
             spatial_shape=[resolution, resolution, resolution],
-            batch_size=len(features)
+            batch_size=num_views
         )
         
         # Encode with placeholder encoder
-        encoder = SimpleSLATEncoder(input_channels=feats.shape[1]).cuda()
+        encoder = SimpleSLATEncoder(input_channels=feats.shape[-1]).cuda()
         encoder.eval()
         with torch.no_grad():
             latent = encoder(sparse_tensor)

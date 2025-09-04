@@ -408,7 +408,7 @@ These steps are identical to text-to-3D, processing the 3D models.
 ```bash
 python dataset_toolkits/voxelize1.py 404mini_5 --output_dir datasets/404mini
 python dataset_toolkits/encode_ss_latent1.py 404mini_5 --output_dir datasets/404mini
-python dataset_toolkits/encode_latent.py 404mini_100 --output_dir datasets/404mini
+python dataset_toolkits/encode_latent1.py 404mini_5 --output_dir datasets/404mini
 ```
 
 **Notes**:
