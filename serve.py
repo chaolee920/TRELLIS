@@ -68,51 +68,51 @@ async def generate(
     t0 = time()
     print("generation started")
 
-    with torch.cuda.amp.autocast():
+    # with torch.cuda.amp.autocast():
     # outputs = pipeline.run(prompt + "4k, white background, 3D style, best quality", seed=1)
-        image = t2i_pipe(
-            prompt + ", white background, 3d style, whole body, cartoon asset",
-            negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
-                    "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
-                    "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
-                    "Extra arms, extra legs, fused fingers, too many fingers, long neck",
-            guidance_scale=7.5, # Example value, adjust for desired output
-            num_inference_steps=25, # Example value, adjust for desired quality/speed
-        ).images[0]
-        
-        image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
+    image = t2i_pipe(
+        prompt + ", white background, 3d style, whole body, cartoon asset",
+        negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
+                "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
+                "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
+                "Extra arms, extra legs, fused fingers, too many fingers, long neck",
+        guidance_scale=7.5, # Example value, adjust for desired output
+        num_inference_steps=25, # Example value, adjust for desired quality/speed
+    ).images[0]
+    
+    image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
 
-        image = image.resize((512, 512))
-        
-        # Run the pipeline
-        try:
-            outputs = pipeline.run(image,seed=1,
-                sparse_structure_sampler_params={
-                    "steps": 30,
-                    "cfg_strength": 8,
-                },
-                slat_sampler_params={
-                    "steps": 30,
-                    "cfg_strength": 4,
-                }
-            )
-        except ValueError:  #raised if `y` is empty.
-            logger.error("Generation failed, try again.")
-            return None
+    image = image.resize((512, 512))
+    
+    # Run the pipeline
+    try:
+        outputs = pipeline.run(image,seed=1,
+            sparse_structure_sampler_params={
+                "steps": 30,
+                "cfg_strength": 8,
+            },
+            slat_sampler_params={
+                "steps": 30,
+                "cfg_strength": 4,
+            }
+        )
+    except ValueError:  #raised if `y` is empty.
+        logger.error("Generation failed, try again.")
+        return None
 
-        print("generation ended")
-        t1 = time()
-        print(f" Generation took: {(t1 - t0) / 60.0} min")
+    print("generation ended")
+    t1 = time()
+    print(f" Generation took: {(t1 - t0) / 60.0} min")
 
-        buffer = BytesIO()
-        outputs['gaussian'][0].save_ply(buffer)
-        print("saved")
-        buffer.seek(0)
-        buffer = buffer.getbuffer()
-        t2 = time()
-        print(f" Saving and encoding took: {(t2 - t1) / 60.0} min")
+    buffer = BytesIO()
+    outputs['gaussian'][0].save_ply(buffer)
+    print("saved")
+    buffer.seek(0)
+    buffer = buffer.getbuffer()
+    t2 = time()
+    print(f" Saving and encoding took: {(t2 - t1) / 60.0} min")
 
-        return Response(buffer, media_type="application/octet-stream")
+    return Response(buffer, media_type="application/octet-stream")
 
 
 @app.post("/generate_video/")

@@ -29,6 +29,6 @@ image = t2i_pipe(
 
 image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
 
-imge = image.resize((512, 512))
+image = image.resize((512, 512))
 
 image.save(f"./output.png")
