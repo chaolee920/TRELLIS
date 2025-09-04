@@ -13,16 +13,17 @@ import requests
 torch.cuda.empty_cache()
 
 # model_id = "stabilityai/stable-diffusion-2"
-model_id = "stabilityai/stable-diffusion-2-1"
+# model_id = "stabilityai/stable-diffusion-2-1"
+model_id = "stable-diffusion-v1-5/stable-diffusion-v1-5"
 
 t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
     dtype=torch.float16
 ).to("cuda:1")
 
-t2i_pipe.unet = t2i_pipe.unet.half()
-t2i_pipe.vae = t2i_pipe.vae.half()
-t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
+# t2i_pipe.unet = t2i_pipe.unet.half()
+# t2i_pipe.vae = t2i_pipe.vae.half()
+# t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
 i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 i23_pipeline.cuda()
