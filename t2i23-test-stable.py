@@ -12,7 +12,8 @@ import requests
 
 torch.cuda.empty_cache()
 
-model_id = "stabilityai/stable-diffusion-2"
+# model_id = "stabilityai/stable-diffusion-2"
+model_id = "stabilityai/stable-diffusion-2-1"
 
 t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
