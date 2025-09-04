@@ -10,8 +10,8 @@ from gsplat import fully_fused_projection, rasterize_to_pixels, quat_scale_to_co
 def load_gaussian_splat(ply_path):
     """Load .ply file as Gaussian splat (points, colors, scales, rotations, opacities)."""
     pcd = o3d.io.read_point_cloud(ply_path)
-    points = np.ascontiguousarray(pcd.points, dtype=np.float32)  # Ensure contiguous
-    colors = np.ascontiguousarray(pcd.colors, dtype=np.float32)
+    points = np.ascontiguousarray(np.asarray(pcd.points), dtype=np.float32)  # Ensure contiguous NumPy array
+    colors = np.ascontiguousarray(np.asarray(pcd.colors), dtype=np.float32)
     
     # Dummy scales, rotations, opacities
     scales = np.ascontiguousarray(np.ones((points.shape[0], 3), dtype=np.float32) * 0.01)
@@ -68,7 +68,12 @@ def compute_intrinsics(fovy, width, height):
 
 def render_gaussian_splat(ply_path, output_dir, num_views=8):
     """Render multiview images from Gaussian splat .ply file."""
-    points, colors, covars, quats, scales, opacities = load_gaussian_splat(ply_path)
+    try:
+        points, colors, covars, quats, scales, opacities = load_gaussian_splat(ply_path)
+    except Exception as e:
+        print(f"Error loading {ply_path}: {e}")
+        return
+    
     os.makedirs(output_dir, exist_ok=True)
     
     height, width = 256, 256
@@ -83,7 +88,7 @@ def render_gaussian_splat(ply_path, output_dir, num_views=8):
         viewmats.append(view_matrix)
     viewmats = torch.stack(viewmats, dim=0)  # [num_views, 4, 4]
     
-    # Project Gaussians (batched)
+    # Project Gaussians
     try:
         xys, depths, radii, conics, comp, num_tiles_hit, cov3ds = fully_fused_projection(
             means=points,
@@ -98,7 +103,7 @@ def render_gaussian_splat(ply_path, output_dir, num_views=8):
             far_plane=100.0
         )
         
-        # Rasterize to pixels (batched)
+        # Rasterize to pixels
         images, _ = rasterize_to_pixels(
             xys=xys,
             depths=depths,
@@ -132,10 +137,7 @@ def main(args):
     for idx, row in df.iterrows():
         ply_path = row['model_path']
         output_subdir = os.path.join(render_dir, row['uid'])
-        try:
-            render_gaussian_splat(ply_path, output_subdir, args.num_views)
-        except Exception as e:
-            print(f"Error rendering {ply_path}: {e}")
+        render_gaussian_splat(ply_path, output_subdir, args.num_views)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
