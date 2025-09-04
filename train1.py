@@ -88,7 +88,7 @@ def get_model_summary(model):
 def main(local_rank, cfg):
     # Set up distributed training
     rank = cfg.node_rank * cfg.num_gpus + local_rank
-   -World_size = cfg.num_nodes * cfg.num_gpus
+    world_size = cfg.num_nodes * cfg.num_gpus
     if world_size > 1:
         setup_dist(rank, local_rank, world_size, cfg.master_addr, cfg.master_port)
 
@@ -116,4 +116,61 @@ def main(local_rank, cfg):
     trainer = getattr(trainers, cfg.trainer.name)(model_dict, dataset, **cfg.trainer.args, output_dir=cfg.output_dir, load_dir=cfg.load_dir, step=cfg.load_ckpt)
 
     # Train
-    if not cfg.tryrun
+    if not cfg.tryrun:
+        if cfg.profile:
+            trainer.profile()
+        else:
+            trainer.run()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str, required=True, help='Experiment config file')
+    parser.add_argument('--output_dir', type=str, required=True, help='Output directory')
+    parser.add_argument('--load_dir', type=str, default='', help='Load directory, default to output_dir')
+    parser.add_argument('--ckpt', type=str, default='latest', help='Checkpoint step to resume training')
+    parser.add_argument('--data_dir', type=str, default='./data/', help='Data directory')
+    parser.add_argument('--dataset_name', type=str, default='404mini_5', help='Dataset name (e.g., 404mini_5)')
+    parser.add_argument('--auto_retry', type=int, default=3, help='Number of retries on error')
+    parser.add_argument('--tryrun', action='store_true', help='Try run without training')
+    parser.add_argument('--profile', action='store_true', help='Profile training')
+    parser.add_argument('--num_nodes', type=int, default=1, help='Number of nodes')
+    parser.add_argument('--node_rank', type=int, default=0, help='Node rank')
+    parser.add_argument('--num_gpus', type=int, default=-1, help='Number of GPUs per node')
+    parser.add_argument('--master_addr', type=str, default='localhost', help='Master address')
+    parser.add_argument('--master_port', type=str, default='12345', help='Port')
+    opt = parser.parse_args()
+    opt.load_dir = opt.load_dir if opt.load_dir != '' else opt.output_dir
+    opt.num_gpus = torch.cuda.device_count() if opt.num_gpus == -1 else opt.num_gpus
+    config = json.load(open(opt.config, 'r'))
+    cfg = edict()
+    cfg.update(opt.__dict__)
+    cfg.update(config)
+    print('\n\nConfig:')
+    print('=' * 80)
+    print(json.dumps(cfg.__dict__, indent=4))
+
+    if cfg.node_rank == 0:
+        os.makedirs(cfg.output_dir, exist_ok=True)
+        with open(os.path.join(cfg.output_dir, 'command.txt'), 'w') as fp:
+            print(' '.join(['python'] + sys.argv), file=fp)
+        with open(os.path.join(cfg.output_dir, 'config.json'), 'w') as fp:
+            json.dump(config, fp, indent=4)
+
+    if cfg.auto_retry == 0:
+        cfg = find_ckpt(cfg)
+        if cfg.num_gpus > 1:
+            mp.spawn(main, args=(cfg,), nprocs=cfg.num_gpus, join=True)
+        else:
+            main(0, cfg)
+    else:
+        for rty in range(cfg.auto_retry):
+            try:
+                cfg = find_ckpt(cfg)
+                if cfg.num_gpus > 1:
+                    mp.spawn(main, args=(cfg,), nprocs=cfg.num_gpus, join=True)
+                else:
+                    main(0, cfg)
+                break
+            except Exception as e:
+                print(f'Error: {e}')
+                print(f'Retrying ({rty + 1}/{cfg.auto_retry})...')
