@@ -13,10 +13,10 @@ def encode_sparse_structure(voxel_path, resolution=64):
             raise ValueError(f"Invalid voxel grid shape: {voxel_grid.shape}")
         
         # Convert to sparse tensor
-        indices = torch.nonzero(voxel_grid).long()  # [N, 3]
-        # Add batch dimension: [N, 3] -> [N, 4] with batch index 0
-        batch_indices = torch.zeros((indices.shape[0], 1), dtype=torch.long, device=indices.device)
-        indices = torch.cat([batch_indices, indices], dim=1)  # [N, 4]
+        indices = torch.nonzero(voxel_grid).to(torch.int32)  # [N, 3], int32
+        # Add batch dimension: [N, 3] -> [N, 4]
+        batch_indices = torch.zeros((indices.shape[0], 1), dtype=torch.int32, device=indices.device)
+        indices = torch.cat([batch_indices, indices], dim=1)  # [N, 4], int32
         features = torch.ones((indices.shape[0], 1), dtype=torch.float32)  # Dummy features
         
         sparse_tensor = spconv.SparseConvTensor(
