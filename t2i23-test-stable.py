@@ -9,12 +9,13 @@ from diffusers import DiffusionPipeline
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
+from rembg import remove
 
 torch.cuda.empty_cache()
 
-# model_id = "stabilityai/stable-diffusion-2"
+model_id = "stabilityai/stable-diffusion-2"
 # model_id = "stabilityai/stable-diffusion-2-1"
-model_id = "stable-diffusion-v1-5/stable-diffusion-v1-5"
+# model_id = "stable-diffusion-v1-5/stable-diffusion-v1-5"
 
 t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
@@ -34,14 +35,18 @@ while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
     image = t2i_pipe(
-        prompt + ", white background, 3d style, whole body, cartoon asset",
+        prompt + ", transparent background, isolated object, cinematic lighting, front view, photorealistic, 3d render, ultra-detailed, 4K, sharp focus, clear edges",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
             "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
             "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
             "Extra arms, extra legs, fused fingers, too many fingers, long neck",
         guidance_scale=7.5, # Example value, adjust for desired output
-        num_inference_steps=25, # Example value, adjust for desired quality/speed).images[0]
+        num_inference_steps=30, # Example value, adjust for desired quality/speed).images[0]
+        width=512,
+        height=512,
     ).images[0]
+
+    image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
 
     # Run the pipeline
     try:
@@ -70,7 +75,7 @@ while cnt < 10 :
         results_validation = response.json()
 
         validation_score = float(results_validation["score"])
-        print(validation_score)
+        print(f"=====Final Score: {validation_score}=====")
     cnt=cnt+1
     print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
     print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
