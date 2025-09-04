@@ -136,11 +136,12 @@ def main(local_rank, cfg):
     setup_rng(rank)
     print("B")
     dataset = Custom404MiniDataset(cfg.data_dir, dataset_name=cfg.dataset_name)
+    print("C")
     model_dict = {
         name: getattr(models, model.name)(**model.args).cuda()
         for name, model in cfg.models.items()
     }
-    print("C")
+    
     if rank == 0:
         for name, backbone in model_dict.items():
             model_summary = get_model_summary(backbone)
