@@ -1,4 +1,3 @@
-import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 def load_prompter():
@@ -8,8 +7,6 @@ def load_prompter():
     tokenizer.padding_side = "left"
     return prompter_model, tokenizer
 
-prompter_model, prompter_tokenizer = load_prompter()
-
 def generate(plain_text):
     input_ids = prompter_tokenizer(plain_text.strip()+" Rephrase:", return_tensors="pt").input_ids
     eos_id = prompter_tokenizer.eos_token_id
@@ -17,6 +14,8 @@ def generate(plain_text):
     output_texts = prompter_tokenizer.batch_decode(outputs, skip_special_tokens=True)
     res = output_texts[0].replace(plain_text+" Rephrase:", "").strip()
     return res
+
+prompter_model, prompter_tokenizer = load_prompter()
 
 prompts_file = open("/workspace/logs/prompts.txt", "r")
 cnt = 0
