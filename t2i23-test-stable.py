@@ -13,9 +13,10 @@ from rembg import remove
 
 torch.cuda.empty_cache()
 
-model_id = "stabilityai/stable-diffusion-2"
+# model_id = "stabilityai/stable-diffusion-2"
 # model_id = "stabilityai/stable-diffusion-2-1"
 # model_id = "stable-diffusion-v1-5/stable-diffusion-v1-5"
+model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 
 t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
@@ -35,7 +36,7 @@ while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
     image = t2i_pipe(
-        prompt + ", transparent background, isolated object, cinematic lighting, front view, photorealistic, 3d render, ultra-detailed, 4K, sharp focus, clear edges",
+        prompt + ", white background, 3d style, whole body, cartoon asset",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
             "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
             "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
