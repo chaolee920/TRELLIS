@@ -27,7 +27,7 @@ def foreach_instance(metadata, output_dir, func, max_workers=None, desc='Process
             tqdm(total=len(metadata), desc=desc) as pbar:
             def worker(metadatum):
                 try:
-                    local_path = metadatum['local_path']
+                    local_path = metadatum['file_identifier']
                     sha256 = metadatum['sha256']
                     file = os.path.join(output_dir, local_path)
                     record = func(file, sha256)
