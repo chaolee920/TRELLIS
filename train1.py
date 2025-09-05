@@ -48,8 +48,8 @@ class Custom404MiniDataset:
         return {
             'latent': latent.to(torch.float64),
             'features': features.to(torch.float64),
-            'input_ids': tokens['input_ids'].squeeze(0).to(torch.float64),
-            'attention_mask': tokens['attention_mask'].squeeze(0).to(torch.float64),
+            'input_ids': tokens['input_ids'].squeeze(0).to(torch.int64),
+            'attention_mask': tokens['attention_mask'].squeeze(0).to(torch.int64),
             'uid': row['uid']
         }
 
@@ -69,8 +69,8 @@ class Custom404MiniDataset:
             features = [torch.stack(f) if isinstance(f, list) else f for f in features]
         except:
             features = features
-        input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=0).to(torch.float64)
-        attention_masks = torch.nn.utils.rnn.pad_sequence(attention_masks, batch_first=True, padding_value=0).to(torch.float64)
+        input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=0).to(torch.int64)
+        attention_masks = torch.nn.utils.rnn.pad_sequence(attention_masks, batch_first=True, padding_value=0).to(torch.int64)
         
         # Debug prints
         print("Collated batch:")
@@ -79,11 +79,19 @@ class Custom404MiniDataset:
         print(f"Input IDs: {input_ids.shape}, dtype: {input_ids.dtype}")
         print(f"Attention Masks: {attention_masks.shape}, dtype: {attention_masks.dtype}")
         
+        # return {
+        #     'latent': latents,
+        #     'features': features,
+        #     'input_ids': input_ids,
+        #     'attention_mask': attention_masks
+        # }
         return {
-            'latent': latents,
-            'features': features,
-            'input_ids': input_ids,
-            'attention_mask': attention_masks
+            "x_0": latents.float(),
+            "c": {
+                "features": features.float(),
+                "input_ids": input_ids,
+                "attention_mask": attention_masks
+            }
         }
 
 def find_ckpt(cfg):
