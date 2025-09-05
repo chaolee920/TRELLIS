@@ -79,10 +79,10 @@ class Custom404MiniDataset:
         print(f"Attention Masks: {attention_masks.shape}, dtype: {attention_masks.dtype}")
         
         return {
-            'latent': latents,
-            'features': features,
-            'input_ids': input_ids,
-            'attention_mask': attention_masks
+            'latent': latents.float(),
+            'features': features.float(),
+            'input_ids': input_ids.float(),
+            'attention_mask': attention_masks.float()
         }
 
 def find_ckpt(cfg):
