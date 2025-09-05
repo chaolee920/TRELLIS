@@ -87,7 +87,7 @@ while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
     t0 = time()
-    generate(prompt, guidance_scale=3.0)
+    generate(prompt, guidance_scale=5.0)
 
     # validation_score = validate()
     
