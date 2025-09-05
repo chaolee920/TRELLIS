@@ -86,8 +86,8 @@ class Custom404MiniDataset:
         #     'attention_mask': attention_masks
         # }
         return {
-            "x_0": latents.to(torch.float),
-            "features": features,
+            "x_0": latents.to(torch.float32),
+            "features": features.to(torch.float32),
             "input_ids": input_ids,
             "attention_mask": attention_masks
         }
@@ -156,8 +156,10 @@ def main(local_rank, cfg):
     print("EEE")
     if not cfg.tryrun:
         if cfg.profile:
+            print("FFF")
             trainer.profile()
         else:
+            print("GGG")
             trainer.run()
 
 if __name__ == "__main__":
