@@ -1,6 +1,9 @@
 import pyspz
 import os
 import pandas as pd
+import open3d as o3d
+import trimesh
+
 
 def decompress_spz_files(csv_path, output_dir):
     df = pd.read_csv(csv_path)
@@ -17,15 +20,38 @@ def decompress_spz_files(csv_path, output_dir):
             with open(spz_path, 'rb') as f:
                 compressed = f.read()
             decompressed = pyspz.decompress(compressed, include_normals=True)
-            with open(ply_path, 'wb') as f:
-                f.write(decompressed)
+
+            pc_ply_path = os.path.join(file_dir, "pointcloud.ply")
+            os.system(f"python /workspace/proj-sub17/3DGS-to-PC/gauss_to_pc.py --input {ply_path} --output {pc_ply_path}")
+
+            # Convert point cloud to mesh .obj
+            obj_path = os.path.join(file_dir, "model.obj")
+            pcd = o3d.io.read_point_cloud(pc_ply_path)
+            pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+            mesh, _ = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)
+            o3d.io.write_triangle_mesh(obj_path, mesh)
+
+            # Validate and fix mesh
+            trimesh_mesh = trimesh.load(obj_path)
+            if not trimesh_mesh.is_watertight:
+                trimesh_mesh.fill_holes()
+                trimesh_mesh.export(obj_path)
+
+
+            # with open(ply_path, 'wb') as f:
+            #     f.write(decompressed)
+
+
             # push png to file_identifier directory
             with open(render_path, 'rb') as f:
                 png = f.read()
             with open(png_path, 'wb') as f:
                 f.write(png)
-            df.at[idx, 'model_path'] = ply_path
+            df.at[idx, 'model_path'] = obj_path
             df.at[idx, 'render_path'] = png_path
+            os.remove(spz_path)
+            os.remove(ply_path)
+            os.remove(pc_ply_path)
         except Exception as e:
             print(f"Error Pushing {spz_path}, {render_path}: {e}")
     
