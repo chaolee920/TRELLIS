@@ -85,12 +85,10 @@ def validate():
 while True:
     guid_scale = float(input())
     prompts_file = open("/workspace/logs/prompts.txt", "r")
-    for i in range(120):
-        prompts_file.readline()
     cnt = 0
-    while cnt < 10 :
+    while cnt < 20 :
         torch.cuda.empty_cache()
-        prompt = prompts_file.readline()
+        prompt = prompts_file.readline()[:-1]
         print(f"=====Prompt: {prompt}=====")
         t0 = time()
         generate(prompt, guidance_scale=guid_scale)
