@@ -101,7 +101,7 @@ python dataset_toolkits/render.py <SUBSET> --output_dir <OUTPUT_DIR> [--num_view
 For example, to render the ObjaverseXL (sketchfab) subset and save it to `datasets/ObjaverseXL_sketchfab`, we can run:
 
 ```
-python dataset_toolkits/render.py ObjaverseXL --output_dir datasets/ObjaverseXL_sketchfab
+python dataset_toolkits/render.py 404mini --output_dir datasets/404mini
 ```
 
 Don't forget to update the metadata file with:
