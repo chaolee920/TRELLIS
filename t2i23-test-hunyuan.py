@@ -91,13 +91,14 @@ while True:
     while cnt < 10 :
         torch.cuda.empty_cache()
         prompt = prompts_file.readline()
+        print(f"=====Prompt: {prompt}=====")
         t0 = time()
         generate(prompt, guidance_scale=guid_scale)
 
-        # validation_score = validate()
+        validation_score = validate()
         
-        # if validation_score < 0.6:
-        #     generate(prompt, guidance_scale=3.0)
+        if validation_score < 0.6:
+            generate(prompt, guidance_scale=3.0)
         
         print(f"=====Final Score: {validate()}, Generation took: {time() - t0}=====")
         cnt=cnt+1
