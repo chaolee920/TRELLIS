@@ -86,9 +86,9 @@ class Custom404MiniDataset:
         #     'attention_mask': attention_masks
         # }
         return {
-            "x_0": latents.float(),
+            "x_0": latents,
             "c": {
-                "features": features.float(),
+                "features": features,
                 "input_ids": input_ids,
                 "attention_mask": attention_masks
             }
