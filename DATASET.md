@@ -125,7 +125,7 @@ python dataset_toolkits/voxelize.py <SUBSET> --output_dir <OUTPUT_DIR> [--rank <
 For example, to voxelize the ObjaverseXL (sketchfab) subset and save it to `datasets/ObjaverseXL_sketchfab`, we can run:
 
 ```
-python dataset_toolkits/voxelize.py ObjaverseXL --output_dir datasets/ObjaverseXL_sketchfab
+python dataset_toolkits/voxelize.py 404mini --output_dir datasets/404mini
 ```
 
 Then update the metadata file with:
@@ -148,7 +148,7 @@ python dataset_toolkits/extract_features.py --output_dir <OUTPUT_DIR> [--rank <R
 For example, to extract DINO features from the ObjaverseXL (sketchfab) subset and save it to `datasets/ObjaverseXL_sketchfab`, we can run:
 
 ```
-python dataset_toolkits/extract_feature.py --output_dir datasets/ObjaverseXL_sketchfab
+python dataset_toolkits/extract_feature.py --output_dir datasets/404mini
 ```
 
 Then update the metadata file with:
@@ -171,7 +171,7 @@ python dataset_toolkits/encode_ss_latent.py --output_dir <OUTPUT_DIR> [--rank <R
 For example, to encode the sparse structures into latents for the ObjaverseXL (sketchfab) subset and save it to `datasets/ObjaverseXL_sketchfab`, we can run:
 
 ```
-python dataset_toolkits/encode_ss_latent.py --output_dir datasets/ObjaverseXL_sketchfab
+python dataset_toolkits/encode_ss_latent.py --output_dir datasets/404mini
 ```
 
 Then update the metadata file with:
@@ -194,7 +194,7 @@ python dataset_toolkits/encode_latent.py --output_dir <OUTPUT_DIR> [--rank <RANK
 For example, to encode SLat for the ObjaverseXL (sketchfab) subset and save it to `datasets/ObjaverseXL_sketchfab`, we can run:
 
 ```
-python dataset_toolkits/encode_latent.py --output_dir datasets/ObjaverseXL_sketchfab
+python dataset_toolkits/encode_latent.py --output_dir datasets/404mini
 ```
 
 Then update the metadata file with:
