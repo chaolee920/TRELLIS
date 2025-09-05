@@ -46,8 +46,8 @@ class Custom404MiniDataset:
         caption = row['captions'][0] if isinstance(row['captions'], list) else row['captions']
         tokens = self.tokenizer(caption, return_tensors="pt", padding=True, truncation=True, max_length=128)
         return {
-            'latent': latent,
-            'features': features,
+            'latent': latent.to(torch.float64),
+            'features': features.to(torch.float64),
             'input_ids': tokens['input_ids'].squeeze(0).to(torch.float64),
             'attention_mask': tokens['attention_mask'].squeeze(0).to(torch.float64),
             'uid': row['uid']
