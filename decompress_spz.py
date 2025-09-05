@@ -23,7 +23,7 @@ def decompress_spz_files(csv_path, output_dir):
             with open(ply_path, 'wb') as f:
                 f.write(decompressed)
             pc_ply_path = os.path.join(file_dir, "pointcloud.ply")
-            os.system(f"python /workspace/proj-sub17/3DGS-to-PC/gauss_to_pc.py --input {ply_path} --output {pc_ply_path}")
+            os.system(f"python /workspace/proj-sub17/3DGS-to-PC/gauss_to_pc.py --input {ply_path} --output {pc_ply_path} --no_render_colours")
 
             # Convert point cloud to mesh .obj
             obj_path = os.path.join(file_dir, "model.obj")
