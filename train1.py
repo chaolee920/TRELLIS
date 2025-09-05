@@ -88,7 +88,7 @@ class Custom404MiniDataset:
         return {
             "x_0": latents.to(torch.float),
             "c": {
-                "features": torch.tensor(features),
+                "features": torch.stack(features),
                 "input_ids": input_ids,
                 "attention_mask": attention_masks
             }
