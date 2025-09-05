@@ -7,6 +7,7 @@ import torch
 from trellis.pipelines import TrellisTextTo3DPipeline
 import pybase64
 import requests
+from time import time
 
 torch.cuda.empty_cache()
 
@@ -14,13 +15,9 @@ torch.cuda.empty_cache()
 pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
 pipeline.cuda()
 
-prompts_file = open("/workspace/logs/prompts.txt", "r")
-cnt = 0
-while cnt < 10 :
-    prompt = prompts_file.readline()
 
-
-    outputs = pipeline.run(prompt + ", 3d style, game asset", seed=1,
+def generate(prompt):
+    outputs = pipeline.run(prompt + ", 3d style, whole body, cartoon asset", seed=1,
         sparse_structure_sampler_params={
             "steps": 30,
             "cfg_strength": 8,
@@ -34,6 +31,9 @@ while cnt < 10 :
     # Render the outputs
     # Save Gaussians as PLY files
     outputs['gaussian'][0].save_ply("sample.ply")
+
+
+def validate():
     with open("./sample.ply", "rb") as file:
         file_data = file.read()
     encoded_data = pybase64.b64encode(file_data).decode("utf-8")
@@ -43,5 +43,18 @@ while cnt < 10 :
         results_validation = response.json()
 
         validation_score = float(results_validation["score"])
-        print(validation_score)
+        return validation_score
+    else:
+        print("Validation failed with status code:", response.status_code)
+        return 0
+
+
+prompts_file = open("/workspace/logs/prompts.txt", "r")
+cnt = 0
+while cnt < 50 :
+    prompt = prompts_file.readline()
+    t0 = time()
+    generate(prompt)
+    validation_score = validate()
+    print(f"=====Final Score: {validation_score}, Generation took: {time() - t0}=====")
     cnt=cnt+1
