@@ -131,24 +131,29 @@ def get_model_summary(model):
     return model_summary
 
 def main(local_rank, cfg):
+    print("AAA")
     rank = cfg.node_rank * cfg.num_gpus + local_rank
     world_size = cfg.num_nodes * cfg.num_gpus
+    print("BBB")
     if world_size > 1 and setup_dist is not None:
         setup_dist(rank, local_rank, world_size, cfg.master_addr, cfg.master_port)
     setup_rng(rank)
     dataset = Custom404MiniDataset(cfg.data_dir, dataset_name=cfg.dataset_name)
+    print("CCC")
     model_dict = {
         name: getattr(models, model.name)(**model.args).cuda()
         for name, model in cfg.models.items()
     }
-    
+    print("CCC")
     if rank == 0:
         for name, backbone in model_dict.items():
             model_summary = get_model_summary(backbone)
             print(f'\n\nBackbone: {name}\n' + model_summary)
             with open(os.path.join(cfg.output_dir, f'{name}_model_summary.txt'), 'w') as fp:
                 print(model_summary, file=fp)
+    print("DDD")
     trainer = getattr(trainers, cfg.trainer.name)(model_dict, dataset, **cfg.trainer.args, output_dir=cfg.output_dir, load_dir=cfg.load_dir, step=cfg.load_ckpt)
+    print("EEE")
     if not cfg.tryrun:
         if cfg.profile:
             trainer.profile()
@@ -196,10 +201,13 @@ if __name__ == "__main__":
     else:
         for rty in range(cfg.auto_retry):
             try:
+                print("AAA")
                 cfg = find_ckpt(cfg)
+                print("BBB")
                 if cfg.num_gpus > 1:
                     mp.spawn(main, args=(cfg,), nprocs=cfg.num_gpus, join=True)
                 else:
+                    print("CCC")
                     main(0, cfg)
                 break
             except Exception as e:
