@@ -5,7 +5,7 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 import pandas as pd
-from TRELLIS.dataset_toolkits.utils import get_file_hash
+from trellis.dataset_toolkits.utils import get_file_hash
 
 def add_args(parser: argparse.ArgumentParser):
     pass
