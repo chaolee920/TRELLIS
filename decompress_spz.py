@@ -20,7 +20,8 @@ def decompress_spz_files(csv_path, output_dir):
             with open(spz_path, 'rb') as f:
                 compressed = f.read()
             decompressed = pyspz.decompress(compressed, include_normals=True)
-
+            with open(ply_path, 'wb') as f:
+                f.write(decompressed)
             pc_ply_path = os.path.join(file_dir, "pointcloud.ply")
             os.system(f"python /workspace/proj-sub17/3DGS-to-PC/gauss_to_pc.py --input {ply_path} --output {pc_ply_path}")
 
@@ -37,9 +38,6 @@ def decompress_spz_files(csv_path, output_dir):
                 trimesh_mesh.fill_holes()
                 trimesh_mesh.export(obj_path)
 
-
-            # with open(ply_path, 'wb') as f:
-            #     f.write(decompressed)
 
 
             # push png to file_identifier directory
