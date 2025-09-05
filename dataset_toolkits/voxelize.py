@@ -65,7 +65,7 @@ if __name__ == '__main__':
         else:
             instances = opt.instances.split(',')
         metadata = metadata[metadata['sha256'].isin(instances)]
-
+    print(metadata)
     start = len(metadata) * opt.rank // opt.world_size
     end = len(metadata) * (opt.rank + 1) // opt.world_size
     metadata = metadata[start:end]
