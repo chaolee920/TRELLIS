@@ -10,7 +10,7 @@ from tqdm import tqdm
 from easydict import EasyDict as edict
 from concurrent.futures import ThreadPoolExecutor
 import utils3d
-
+sys.path.append("./datasets")
 def get_first_directory(path):  
     with os.scandir(path) as it:  
         for entry in it:  
