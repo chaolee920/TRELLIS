@@ -82,21 +82,23 @@ def validate():
         print("Validation failed with status code:", response.status_code)
         return 0
 
-cnt = 0
-while cnt < 10 :
-    torch.cuda.empty_cache()
-    prompt = prompts_file.readline()
-    t0 = time()
-    generate(prompt, guidance_scale=5.0)
+while True:
+    guid_scale = float(input())
+    cnt = 0
+    while cnt < 10 :
+        torch.cuda.empty_cache()
+        prompt = prompts_file.readline()
+        t0 = time()
+        generate(prompt, guidance_scale=guid_scale)
 
-    # validation_score = validate()
-    
-    # if validation_score < 0.6:
-    #     generate(prompt, guidance_scale=3.0)
-    
-    print(f"=====Final Score: {validate()}, Generation took: {time() - t0}=====")
-    cnt=cnt+1
-    
-    print("Memory usage:")
-    print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
-    print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
+        # validation_score = validate()
+        
+        # if validation_score < 0.6:
+        #     generate(prompt, guidance_scale=3.0)
+        
+        print(f"=====Final Score: {validate()}, Generation took: {time() - t0}=====")
+        cnt=cnt+1
+        
+        print("Memory usage:")
+        print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
+        print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
