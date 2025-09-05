@@ -83,7 +83,7 @@ def validate():
         return 0
 
 while True:
-    guid_scale = float(input())
+    # guid_scale = float(input())
     prompts_file = open("/workspace/logs/prompts.txt", "r")
     cnt = 0
     while cnt < 20 :
@@ -91,7 +91,7 @@ while True:
         prompt = prompts_file.readline()[:-1]
         print(f"=====Prompt: {prompt}=====")
         t0 = time()
-        generate(prompt, guidance_scale=guid_scale)
+        generate(prompt, guidance_scale=9.0)
 
         validation_score = validate()
         
