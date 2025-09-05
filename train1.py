@@ -86,9 +86,9 @@ class Custom404MiniDataset:
         #     'attention_mask': attention_masks
         # }
         return {
-            "x_0": latents.to(torch.float32),
+            "x_0": latents.to(torch.float),
             "c": {
-                "features": features,
+                "features": features.to(torch.float),
                 "input_ids": input_ids,
                 "attention_mask": attention_masks
             }
