@@ -9,6 +9,7 @@ from accelerate import Accelerator
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
+from time import time
 from rembg import remove
 
 torch.cuda.empty_cache()
@@ -34,15 +35,15 @@ prompts_file = open("/workspace/logs/prompts.txt", "r")
 for i in range(120):
     prompts_file.readline()
 
-def generate(prompt):
+def generate(prompt, guidance_scale=7.5, num_inference_steps=25):
     image = t2i_pipe(
         prompt + ", white background, 3d style, whole body, cartoon asset, best quality",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
                 "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
                 "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
                 "Extra arms, extra legs, fused fingers, too many fingers, long neck",
-        guidance_scale=7.5,
-        num_inference_steps=25,
+        guidance_scale=guidance_scale,
+        num_inference_steps=num_inference_steps,
     ).images[0]
 
     image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
@@ -85,14 +86,15 @@ cnt = 0
 while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
+    t0 = time()
     generate(prompt)
 
     validation_score = validate()
     
     if validation_score < 0.6:
-        generate(prompt)
+        generate(prompt, guidance_scale=3.0, num_inference_steps=30)
     
-    print(f"=====Final Score: {validate()}=====")
+    print(f"=====Final Score: {validate()}, Generation took: {time() - t0}=====")
     cnt=cnt+1
     
     print("Memory usage:")
