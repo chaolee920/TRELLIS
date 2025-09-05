@@ -5,9 +5,18 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 import pandas as pd
-from utils import get_file_hash
-import sys
-sys.path.append(os.path.dirname(__file__) + "/..")
+import hashlib
+# from utils import get_file_hash
+
+
+def get_file_hash(file: str) -> str:
+    sha256 = hashlib.sha256()
+    # Read the file from the path
+    with open(file, "rb") as f:
+        # Update the hash with the file content
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256.update(byte_block)
+    return sha256.hexdigest()
 def add_args(parser: argparse.ArgumentParser):
     pass
 
