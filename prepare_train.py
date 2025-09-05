@@ -1,7 +1,17 @@
 from huggingface_hub import list_repo_files, hf_hub_download
 import os
+import hashlib
 import pandas as pd
 from datasets import Dataset
+
+def get_file_hash(file: str) -> str:
+    sha256 = hashlib.sha256()
+    # Read the file from the path
+    with open(file, "rb") as f:
+        # Update the hash with the file content
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256.update(byte_block)
+    return sha256.hexdigest()
 
 def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini", max_samples=None, log_file="download_log.txt"):
     os.makedirs(output_dir, exist_ok=True)
@@ -56,9 +66,11 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
                 if png_file in png_files:
                     render_path = os.path.join(render_dir, 'assets', category,  f"{base_name}.png")
                     hf_hub_download(repo_id=repo_id, filename=png_file, repo_type="dataset", local_dir=render_dir)
-                
+                sha256 = get_file_hash(os.path.join(output_dir, png_file))
                 data.append({
+                    "sha256": sha256,
                     "file_identifier": "files/" + f"item_{i:05d}",
+                    "local_path":output_dir+"files/" + f"item_{i:05d}",
                     "uid": base_name,
                     "name": base_name,
                     "source": "404mini",

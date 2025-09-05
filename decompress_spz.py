@@ -3,8 +3,8 @@ import os
 import pandas as pd
 import open3d as o3d
 import trimesh
-
-
+from multiprocessing import Pool, cpu_count
+    
 def decompress_spz_files(csv_path, output_dir):
     df = pd.read_csv(csv_path)
     
@@ -49,7 +49,6 @@ def decompress_spz_files(csv_path, output_dir):
             df.at[idx, 'render_path'] = png_path
             os.remove(spz_path)
             os.remove(ply_path)
-            os.remove(pc_ply_path)
         except Exception as e:
             print(f"Error Pushing {spz_path}, {render_path}: {e}")
     
