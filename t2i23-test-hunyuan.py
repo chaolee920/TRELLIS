@@ -84,6 +84,9 @@ def validate():
 
 while True:
     guid_scale = float(input())
+    prompts_file = open("/workspace/logs/prompts.txt", "r")
+    for i in range(120):
+        prompts_file.readline()
     cnt = 0
     while cnt < 10 :
         torch.cuda.empty_cache()
@@ -102,3 +105,4 @@ while True:
         print("Memory usage:")
         print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
         print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
+    prompts_file.close()
