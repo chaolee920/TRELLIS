@@ -5,13 +5,8 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 import pandas as pd
-from utils import get_file_hash
+from dataset_toolkits.utils import get_file_hash
 
-import sys
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
-sys.path.append(parent_dir)
 def add_args(parser: argparse.ArgumentParser):
     pass
 
