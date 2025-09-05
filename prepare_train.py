@@ -92,7 +92,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
 
 if __name__ == "__main__":
     try:
-        dataset, disk_path = load_404mini_dataset(max_samples=5000)  # Set to 5 for 404mini_5.csv
+        dataset, disk_path = load_404mini_dataset(max_samples=10)  # Set to 5 for 404mini_5.csv
         print(dataset[:5])
     except Exception as e:
         print(f"Error: {e}")
