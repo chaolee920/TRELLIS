@@ -35,11 +35,11 @@ for i in range(120):
     prompts_file.readline()
 
 cnt = 0
-while cnt < 200 :
+while cnt < 10 :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()
     image = t2i_pipe(
-        prompt + ", white background, 3d style, whole body, cartoon asset",
+        prompt + ", white background, 3d style, whole body, cartoon asset, best quality",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
                 "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
                 "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
@@ -49,8 +49,6 @@ while cnt < 200 :
     ).images[0]
 
     image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
-
-    image = image.resize((512, 512))
 
     # Run the pipeline
     try:
