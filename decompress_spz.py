@@ -3,7 +3,35 @@ import os
 import pandas as pd
 import open3d as o3d
 import trimesh
+import torch
 from multiprocessing import Pool, cpu_count
+from pytorch3d.structures import Pointclouds
+from pytorch3d.ops import estimate_pointcloud_normals
+from pytorch3d.io import save_obj
+
+def convert_ply_to_mesh(args):
+    ply_path, obj_path = args
+    try:
+        # Read point cloud using Open3D (CPU)
+        pcd = o3d.io.read_point_cloud(ply_path)
+        points = torch.tensor(pcd.points, dtype=torch.float32).cuda()  # Move to GPU
+        pointcloud = Pointclouds(points=[points])
+
+        # Estimate normals on GPU
+        normals = estimate_pointcloud_normals(pointcloud, neighborhood_size=30, maximum_nn=30)
+
+        # Basic meshing (example: Delaunay triangulation or custom GPU-based meshing)
+        # Note: PyTorch3D doesn't have Poisson reconstruction; use a simple triangulation or external GPU tool
+        # For simplicity, convert back to Open3D for meshing (fallback to CPU here)
+        pcd.normals = o3d.utility.Vector3dVector(normals[0].cpu().numpy())
+        mesh, _ = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)
+        o3d.io.write_triangle_mesh(obj_path, mesh)
+
+        print(f"Converted {ply_path} to {obj_path}")
+        return True
+    except Exception as e:
+        print(f"Error converting {ply_path}: {e}")
+        return False
     
 def decompress_spz_files(csv_path, output_dir):
     df = pd.read_csv(csv_path)
@@ -24,13 +52,16 @@ def decompress_spz_files(csv_path, output_dir):
                 f.write(decompressed)
             # pc_ply_path = os.path.join(file_dir, "pointcloud.ply")
             # os.system(f"python /workspace/proj-sub17/3DGS-to-PC/gauss_to_pc.py --input {ply_path} --output {pc_ply_path} --no_render_colours")
-
-            # Convert point cloud to mesh .obj
             obj_path = os.path.join(file_dir, "model.obj")
-            pcd = o3d.io.read_point_cloud(ply_path)
-            pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
-            mesh, _ = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)
-            o3d.io.write_triangle_mesh(obj_path, mesh)
+            tasks = []
+            tasks.append((ply_path, obj_path))
+            # Convert point cloud to mesh .obj
+            with Pool(processes=cpu_count()) as pool:
+                results = pool.map(convert_ply_to_mesh, tasks)
+            # pcd = o3d.io.read_point_cloud(ply_path)
+            # pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+            # mesh, _ = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)
+            # o3d.io.write_triangle_mesh(obj_path, mesh)
 
             # Validate and fix mesh
             trimesh_mesh = trimesh.load(obj_path)
