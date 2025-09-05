@@ -42,7 +42,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
     print(f"Processing up to {len(json_files)} JSON files from index {start_index}")
     
     # Load existing CSV if it exists
-    csv_path = os.path.join(output_dir, f"404mini_{max_samples or 'full'}.csv")
+    csv_path = os.path.join(output_dir, f"metadata.csv")
     if os.path.exists(csv_path):
         df_existing = pd.read_csv(csv_path)
         data = df_existing.to_dict('records')
@@ -103,7 +103,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
 
 if __name__ == "__main__":
     try:
-        dataset, csv_path = load_404mini_dataset(max_samples=5)  # Set to 5 for 404mini_5.csv
-        print(dataset[:5])
+        dataset, csv_path = load_404mini_dataset(max_samples=1)  # Set to 5 for 404mini_5.csv
+        print(dataset[:1])
     except Exception as e:
         print(f"Error: {e}")
