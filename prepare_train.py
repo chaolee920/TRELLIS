@@ -66,7 +66,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
                 if png_file in png_files:
                     render_path = os.path.join(render_dir, 'assets', category,  f"{base_name}.png")
                     hf_hub_download(repo_id=repo_id, filename=png_file, repo_type="dataset", local_dir=render_dir)
-                sha256 = get_file_hash(os.path.join(output_dir, png_file))
+                sha256 = get_file_hash(os.path.join(output_dir, render_dir))
                 data.append({
                     "sha256": sha256,
                     "file_identifier": "files/" + f"item_{i:05d}",
