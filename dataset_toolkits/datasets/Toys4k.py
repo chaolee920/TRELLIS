@@ -5,8 +5,9 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 import pandas as pd
-from ..utils import get_file_hash
-
+from utils import get_file_hash
+import sys
+sys.path.append(os.path.dirname(__file__) + "/..")
 def add_args(parser: argparse.ArgumentParser):
     pass
 
