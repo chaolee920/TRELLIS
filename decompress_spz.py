@@ -4,9 +4,6 @@ import pandas as pd
 import open3d as o3d
 import trimesh
 from multiprocessing import Pool, cpu_count
-from pytorch3d.structures import Pointclouds
-from pytorch3d.ops import estimate_pointcloud_normals
-from pytorch3d.io import save_obj
 
 def convert_ply_to_mesh(args):
     ply_path, obj_path = args
