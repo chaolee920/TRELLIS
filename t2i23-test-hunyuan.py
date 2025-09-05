@@ -34,25 +34,22 @@ prompts_file = open("/workspace/logs/prompts.txt", "r")
 for i in range(120):
     prompts_file.readline()
 
-cnt = 0
-while cnt < 10 :
-    torch.cuda.empty_cache()
-    prompt = prompts_file.readline()
+def generate(prompt):
     image = t2i_pipe(
         prompt + ", white background, 3d style, whole body, cartoon asset, best quality",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
                 "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
                 "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
                 "Extra arms, extra legs, fused fingers, too many fingers, long neck",
-        guidance_scale=7.5, # Example value, adjust for desired output
-        num_inference_steps=25, # Example value, adjust for desired quality/speed
+        guidance_scale=7.5,
+        num_inference_steps=25,
     ).images[0]
 
     image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
 
     # Run the pipeline
     try:
-        outputs = i23_pipeline.run(image,seed=1,
+        outputs = i23_pipeline.run(image,
             sparse_structure_sampler_params={
                 "steps": 30,
                 "cfg_strength": 8,
@@ -62,12 +59,14 @@ while cnt < 10 :
                 "cfg_strength": 4,
             }
         )
-    except ValueError:  #raised if `y` is empty.
-        continue
+    except ValueError:  # raised if `y` is empty.
+        return None
 
-    # Render the outputs
     # Save Gaussians as PLY files
     outputs['gaussian'][0].save_ply("sample.ply")
+
+
+def validate():
     with open("./sample.ply", "rb") as file:
         file_data = file.read()
     encoded_data = pybase64.b64encode(file_data).decode("utf-8")
@@ -77,7 +76,25 @@ while cnt < 10 :
         results_validation = response.json()
 
         validation_score = float(results_validation["score"])
-        print(validation_score)
+        return validation_score
+    else:
+        print("Validation failed with status code:", response.status_code)
+        return 0
+
+cnt = 0
+while cnt < 10 :
+    torch.cuda.empty_cache()
+    prompt = prompts_file.readline()
+    generate(prompt)
+
+    validation_score = validate()
+    
+    if validation_score < 0.6:
+        generate(prompt)
+    
+    print(f"=====Final Score: {validate()}=====")
     cnt=cnt+1
+    
+    print("Memory usage:")
     print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
     print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")

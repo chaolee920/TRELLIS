@@ -106,6 +106,7 @@ async def generate(
 
     buffer = BytesIO()
     outputs['gaussian'][0].save_ply(buffer)
+    outputs['gaussian'][0].save_ply("sample.ply")
     print("saved")
     buffer.seek(0)
     buffer = buffer.getbuffer()
