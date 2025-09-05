@@ -9,7 +9,7 @@ The dataset is provided as csv files containing the 3D assets' metadata.
 
 The following table summarizes the dataset's filtering and composition:
 
-***NOTE: Some of the 3D assets lack text captions. Please filter out such assets if captions are required.***
+**_NOTE: Some of the 3D assets lack text captions. Please filter out such assets if captions are required._**
 | Source | Aesthetic Score Threshold | Filtered Size | With Captions |
 |:-:|:-:|:-:|:-:|
 | ObjaverseXL (sketchfab) | 5.5 | 168307 | 167638 |
@@ -53,7 +53,7 @@ python dataset_toolkits/build_metadata.py <SUBSET> --output_dir <OUTPUT_DIR> [--
 For example, to load the metadata of the ObjaverseXL (sketchfab) subset and save it to `datasets/ObjaverseXL_sketchfab`, we can run:
 
 ```
-python dataset_toolkits/build_metadata.py ObjaverseXL --source sketchfab --output_dir datasets/ObjaverseXL_sketchfab
+python dataset_toolkits/build_metadata.py 404mini --output_dir datasets/404mini
 ```
 
 ### Step 3: Download Data
@@ -69,9 +69,9 @@ python dataset_toolkits/download.py <SUBSET> --output_dir <OUTPUT_DIR> [--rank <
 
 You can also specify the `RANK` and `WORLD_SIZE` of the current process if you are using multiple nodes for data preparation.
 
-For example, to download the ObjaverseXL (sketchfab) subset and save it to `datasets/ObjaverseXL_sketchfab`, we can run: 
+For example, to download the ObjaverseXL (sketchfab) subset and save it to `datasets/ObjaverseXL_sketchfab`, we can run:
 
-***NOTE: The example command below sets a large `WORLD_SIZE` for demonstration purposes. Only a small portion of the dataset will be downloaded.***
+**_NOTE: The example command below sets a large `WORLD_SIZE` for demonstration purposes. Only a small portion of the dataset will be downloaded._**
 
 ```
 python dataset_toolkits/download.py ObjaverseXL --output_dir datasets/ObjaverseXL_sketchfab --world_size 160000
@@ -123,6 +123,7 @@ python dataset_toolkits/voxelize.py <SUBSET> --output_dir <OUTPUT_DIR> [--rank <
 - `RANK` and `WORLD_SIZE`: Multi-node configuration.
 
 For example, to voxelize the ObjaverseXL (sketchfab) subset and save it to `datasets/ObjaverseXL_sketchfab`, we can run:
+
 ```
 python dataset_toolkits/voxelize.py ObjaverseXL --output_dir datasets/ObjaverseXL_sketchfab
 ```
@@ -143,7 +144,6 @@ python dataset_toolkits/extract_features.py --output_dir <OUTPUT_DIR> [--rank <R
 
 - `OUTPUT_DIR`: The directory to save the data.
 - `RANK` and `WORLD_SIZE`: Multi-node configuration.
-
 
 For example, to extract DINO features from the ObjaverseXL (sketchfab) subset and save it to `datasets/ObjaverseXL_sketchfab`, we can run:
 
@@ -227,5 +227,3 @@ Then update the metadata file with:
 ```
 python dataset_toolkits/build_metadata.py ObjaverseXL --output_dir datasets/ObjaverseXL_sketchfab
 ```
-
-
