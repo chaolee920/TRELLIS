@@ -11,6 +11,7 @@ import random
 import pandas as pd
 from transformers import AutoTokenizer
 
+# Placeholder for trellis imports
 try:
     from trellis import models, trainers
     from trellis.utils.dist_utils import setup_dist
@@ -27,8 +28,8 @@ class Custom404MiniDataset:
         self.df = pd.read_csv(self.csv_path)
         self.latent_dir = os.path.join(data_dir, "latents")
         self.feature_dir = os.path.join(data_dir, "features")
-        self.loads = list(range(len(self.df)))
-        self.value_range = (-1.0, 1.0)
+        self.loads = list(range(len(self.df)))  # For BalancedResumableSampler
+        self.value_range = (-1.0, 1.0)  # Tuple for trainer
         self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 
     def __len__(self):
@@ -44,45 +45,48 @@ class Custom404MiniDataset:
         features = torch.load(feature_path, weights_only=True)
         caption = row['captions'][0] if isinstance(row['captions'], list) else row['captions']
         tokens = self.tokenizer(caption, return_tensors="pt", padding=True, truncation=True, max_length=128)
+        print("D")
         return {
             'latent': latent,
             'features': features,
-            'input_ids': tokens['input_ids'].squeeze(0).to(torch.float32),
-            'attention_mask': tokens['attention_mask'].squeeze(0).to(torch.float32)
+            'input_ids': tokens['input_ids'].squeeze(0).to(torch.int64),
+            'attention_mask': tokens['attention_mask'].squeeze(0).to(torch.int64),
+            'uid': row['uid']
         }
 
     @staticmethod
     def collate_fn(batch):
+        """Batch samples for data loader."""
         latents = [item['latent'] for item in batch]
         features = [item['features'] for item in batch]
         input_ids = [item['input_ids'] for item in batch]
         attention_masks = [item['attention_mask'] for item in batch]
+        uids = [item['uid'] for item in batch]
         
         try:
             latents = torch.stack(latents)
         except:
             latents = latents
         try:
-            features = torch.stack([
-                torch.cat(f, dim=0) if isinstance(f, list) else f  # cat views along dim=0
-                for f in features
-            ], dim=0)
+            features = [torch.stack(f) if isinstance(f, list) else f for f in features]
         except:
             features = features
         input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=0).to(torch.int64)
         attention_masks = torch.nn.utils.rnn.pad_sequence(attention_masks, batch_first=True, padding_value=0).to(torch.int64)
         
+        # Debug prints
         print("Collated batch:")
         print(f"Latents: {type(latents)}, shapes: {[l.shape for l in latents] if isinstance(latents, list) else latents.shape}")
         print(f"Features: {type(features)}, shapes: {[f.shape for f in features] if isinstance(features, list) else features.shape}")
         print(f"Input IDs: {input_ids.shape}, dtype: {input_ids.dtype}")
         print(f"Attention Masks: {attention_masks.shape}, dtype: {attention_masks.dtype}")
+        print(f"UIDs: {uids}")
         
         return {
-            'latent': latents.float(),
-            'features': features.float(),
-            'input_ids': input_ids.float(),
-            'attention_mask': attention_masks.float()
+            'latent': latents,
+            'features': features,
+            'input_ids': input_ids.to(torch.float),
+            'attention_mask': attention_masks.to(torch.float)
         }
 
 def find_ckpt(cfg):
@@ -130,14 +134,11 @@ def main(local_rank, cfg):
         setup_dist(rank, local_rank, world_size, cfg.master_addr, cfg.master_port)
     setup_rng(rank)
     dataset = Custom404MiniDataset(cfg.data_dir, dataset_name=cfg.dataset_name)
-    try:
-        model_dict = {
-            name: getattr(models, model.name)(**model.args).cuda()
-            for name, model in cfg.models.items()
-        }
-    except Exception as e:
-        print(f"Error in model initialization: {e}")
-        raise
+    model_dict = {
+        name: getattr(models, model.name)(**model.args).cuda()
+        for name, model in cfg.models.items()
+    }
+    
     if rank == 0:
         for name, backbone in model_dict.items():
             model_summary = get_model_summary(backbone)
@@ -149,12 +150,7 @@ def main(local_rank, cfg):
         if cfg.profile:
             trainer.profile()
         else:
-            print("Starting training...")
-            try:
-                trainer.run()
-            except Exception as e:
-                print(f"Error in trainer.run(): {e}")
-                raise
+            trainer.run()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -164,7 +160,6 @@ if __name__ == "__main__":
     parser.add_argument('--ckpt', type=str, default='latest')
     parser.add_argument('--data_dir', type=str, default='./data/')
     parser.add_argument('--dataset_name', type=str, default='404mini_5')
-    parser.add_argument('--batch_size', type=int, default=4)
     parser.add_argument('--auto_retry', type=int, default=3)
     parser.add_argument('--tryrun', action='store_true')
     parser.add_argument('--profile', action='store_true')
