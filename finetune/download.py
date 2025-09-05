@@ -38,8 +38,10 @@ for json_file in json_files:
                 "ply": entry.get("ply"),
                 "prompt": entry.get("prompt")
             }
+            
             # Validate required columns
             if all(k in entry and entry[k] is not None for k in ["image", "ply", "prompt"]):
+                print(entry[k])
                 data.append(processed_entry)
             else:
                 print(f"Skipping {json_file}: Missing required columns")
