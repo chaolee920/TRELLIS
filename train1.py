@@ -45,12 +45,11 @@ class Custom404MiniDataset:
         features = torch.load(feature_path, weights_only=True)
         caption = row['captions'][0] if isinstance(row['captions'], list) else row['captions']
         tokens = self.tokenizer(caption, return_tensors="pt", padding=True, truncation=True, max_length=128)
-        print("D")
         return {
             'latent': latent,
             'features': features,
-            'input_ids': tokens['input_ids'].squeeze(0).to(torch.int64),
-            'attention_mask': tokens['attention_mask'].squeeze(0).to(torch.int64),
+            'input_ids': tokens['input_ids'].squeeze(0).to(torch.float64),
+            'attention_mask': tokens['attention_mask'].squeeze(0).to(torch.float64),
             'uid': row['uid']
         }
 
@@ -61,7 +60,6 @@ class Custom404MiniDataset:
         features = [item['features'] for item in batch]
         input_ids = [item['input_ids'] for item in batch]
         attention_masks = [item['attention_mask'] for item in batch]
-        uids = [item['uid'] for item in batch]
         
         try:
             latents = torch.stack(latents)
@@ -80,7 +78,6 @@ class Custom404MiniDataset:
         print(f"Features: {type(features)}, shapes: {[f.shape for f in features] if isinstance(features, list) else features.shape}")
         print(f"Input IDs: {input_ids.shape}, dtype: {input_ids.dtype}")
         print(f"Attention Masks: {attention_masks.shape}, dtype: {attention_masks.dtype}")
-        print(f"UIDs: {uids}")
         
         return {
             'latent': latents,
