@@ -9,14 +9,15 @@ from diffusers import DiffusionPipeline
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
+from time import time
 from rembg import remove
 
 torch.cuda.empty_cache()
 
-# model_id = "stabilityai/stable-diffusion-2"
+model_id = "stabilityai/stable-diffusion-2"
 # model_id = "stabilityai/stable-diffusion-2-1"
 # model_id = "stable-diffusion-v1-5/stable-diffusion-v1-5"
-model_id = "stabilityai/stable-diffusion-xl-base-1.0"
+# model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 
 t2i_pipe = DiffusionPipeline.from_pretrained(
     model_id, 
@@ -30,19 +31,15 @@ t2i_pipe = DiffusionPipeline.from_pretrained(
 i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 i23_pipeline.cuda()
 
-prompts_file = open("/workspace/logs/prompts.txt", "r")
-cnt = 0
-while cnt < 10 :
-    torch.cuda.empty_cache()
-    prompt = prompts_file.readline()
+def generate(prompt, guidance_scale=7.5, num_inference_steps=25):
     image = t2i_pipe(
         prompt + ", white background, 3d style, whole body, cartoon asset",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
             "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
             "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
             "Extra arms, extra legs, fused fingers, too many fingers, long neck",
-        guidance_scale=7.5, # Example value, adjust for desired output
-        num_inference_steps=30, # Example value, adjust for desired quality/speed).images[0]
+        guidance_scale=guidance_scale, # Example value, adjust for desired output
+        num_inference_steps=num_inference_steps, # Example value, adjust for desired quality/speed).images[0]
         width=512,
         height=512,
     ).images[0]
@@ -51,7 +48,7 @@ while cnt < 10 :
 
     # Run the pipeline
     try:
-        outputs = i23_pipeline.run(image,seed=1,
+        outputs = i23_pipeline.run(image,
             sparse_structure_sampler_params={
                 "steps": 30,
                 "cfg_strength": 8,
@@ -61,12 +58,14 @@ while cnt < 10 :
                 "cfg_strength": 4,
             }
         )
-    except ValueError:  #raised if `y` is empty.
-        continue
+    except ValueError:  # raised if `y` is empty.
+        return None
 
-    # Render the outputs
     # Save Gaussians as PLY files
     outputs['gaussian'][0].save_ply("sample.ply")
+
+
+def validate():
     with open("./sample.ply", "rb") as file:
         file_data = file.read()
     encoded_data = pybase64.b64encode(file_data).decode("utf-8")
@@ -76,7 +75,24 @@ while cnt < 10 :
         results_validation = response.json()
 
         validation_score = float(results_validation["score"])
-        print(f"=====Final Score: {validation_score}=====")
-    cnt=cnt+1
-    print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
-    print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
+        return validation_score
+    else:
+        print("Validation failed with status code:", response.status_code)
+        return 0
+
+
+prompts_file = open("/workspace/logs/prompts.txt", "r")
+while True:
+    guid_scale = float(input())
+    cnt = 0
+    while cnt < 10 :
+        t0 = time()
+        torch.cuda.empty_cache()
+        prompt = prompts_file.readline()[:-2]
+        generate(prompt=prompt, guidance_scale=guid_scale)
+        validation_score = validate()
+        # if validation_score < 0.6:
+        #     print(f"Validation score {validation_score} is less than 0.6, regenerating with lower guidance scale...")
+        #     generate(prompt=prompt, guidance_scale=3.0)
+        print(f"=====Final Score: {validation_score}, Generation took: {time() - t0}=====")
+        cnt=cnt+1
