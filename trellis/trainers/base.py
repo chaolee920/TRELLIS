@@ -200,14 +200,23 @@ class Trainer:
             shuffle=True,
             collate_fn=self.dataset.collate_fn if hasattr(self.dataset, 'collate_fn') else None,
         )
+        print("11111111111111")
         data = next(iter(dataloader))
+        print("222222222222")
         data = recursive_to_device(data, self.device)
+        print("333333333333")
         vis = self.visualize_sample(data)
+        print("4444444444444")
         if isinstance(vis, dict):
+            print("55555555555")
             save_cfg = [(f'dataset_{k}', v) for k, v in vis.items()]
+            print("66666666666")
         else:
+            print("7777777777777")
             save_cfg = [('dataset', vis)]
+            print("888888888888")
         for name, image in save_cfg:
+            print("999999999999")
             utils.save_image(
                 image,
                 os.path.join(self.output_dir, 'samples', f'{name}.jpg'),
@@ -215,6 +224,7 @@ class Trainer:
                 normalize=True,
                 value_range=self.dataset.value_range,
             )
+        print("0000000000000000")
 
     @torch.no_grad()
     def snapshot(self, suffix=None, num_samples=64, batch_size=4, verbose=False):
