@@ -27,9 +27,9 @@ features = Features({
 
 # Process JSON files manually
 data = []
-json_files = [f for f in os.listdir(os.path.join(data_dir, "404-Gen/404mini")) if f.endswith(".json")]
+json_files = [f for f in os.listdir(os.path.join(data_dir)) if f.endswith(".json")]
 for json_file in json_files:
-    with open(os.path.join(data_dir, "404-Gen/404mini", json_file), "r") as f:
+    with open(os.path.join(data_dir, json_file), "r") as f:
         try:
             entry = json.load(f)
             # Keep only required columns, ignore others
