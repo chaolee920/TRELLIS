@@ -153,6 +153,8 @@ def main(local_rank, cfg):
                 print(model_summary, file=fp)
     print("DDD")
     trainer = getattr(trainers, cfg.trainer.name)(model_dict, dataset, **cfg.trainer.args, output_dir=cfg.output_dir, load_dir=cfg.load_dir, step=cfg.load_ckpt)
+
+    print(f"--------------------------config: {cfg}")
     print("EEE")
     if not cfg.tryrun:
         if cfg.profile:
