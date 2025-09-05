@@ -12,6 +12,8 @@ from time import time
 from PIL import Image
 import imageio
 import torch
+import pybase64
+import requests
 
 from omegaconf import OmegaConf
 from loguru import logger
@@ -53,6 +55,53 @@ def get_config() -> OmegaConf:
 # def get_models(config: OmegaConf = Depends(get_config)):
 #     return ModelsPreLoader.preload_model(config, "cuda")
 
+def execute_generate(prompt):
+    image = t2i_pipe(
+        prompt + ", white background, 3d style, whole body, cartoon asset, best quality",
+        negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
+                "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
+                "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
+                "Extra arms, extra legs, fused fingers, too many fingers, long neck",
+        guidance_scale=7.5,
+        num_inference_steps=25,
+    ).images[0]
+
+    image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
+
+    # Run the pipeline
+    try:
+        outputs = i23_pipeline.run(image,
+            sparse_structure_sampler_params={
+                "steps": 30,
+                "cfg_strength": 8,
+            },
+            slat_sampler_params={
+                "steps": 30,
+                "cfg_strength": 4,
+            }
+        )
+    except ValueError:  # raised if `y` is empty.
+        return None
+
+    # Save Gaussians as PLY files
+    return outputs['gaussian'][0]
+
+
+def validate():
+    with open("./sample.ply", "rb") as file:
+        file_data = file.read()
+    encoded_data = pybase64.b64encode(file_data).decode("utf-8")
+    validate_url = 'http://127.0.0.1:8094/validate_txt_to_3d_ply'
+    response = requests.post(validate_url, json={"prompt": prompt, "data": encoded_data})
+    if response.status_code == 200:
+        results_validation = response.json()
+
+        validation_score = float(results_validation["score"])
+        return validation_score
+    else:
+        print("Validation failed with status code:", response.status_code)
+        return 0
+
 
 @app.on_event("startup")
 def startup_event() -> None:
@@ -66,48 +115,16 @@ async def generate(
     #models: list = Depends(get_models),
 ) -> Response:
     t0 = time()
-    print("generation started")
-
-    # with torch.cuda.amp.autocast():
-    # outputs = pipeline.run(prompt + "4k, white background, 3D style, best quality", seed=1)
-    image = t2i_pipe(
-        prompt + ", white background, 3d style, whole body, cartoon asset",
-        negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
-                "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
-                "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
-                "Extra arms, extra legs, fused fingers, too many fingers, long neck",
-        guidance_scale=7.5, # Example value, adjust for desired output
-        num_inference_steps=25, # Example value, adjust for desired quality/speed
-    ).images[0]
-    
-    image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
-
-    image = image.resize((512, 512))
-    
-    # Run the pipeline
-    try:
-        outputs = pipeline.run(image,seed=1,
-            sparse_structure_sampler_params={
-                "steps": 30,
-                "cfg_strength": 8,
-            },
-            slat_sampler_params={
-                "steps": 30,
-                "cfg_strength": 4,
-            }
-        )
-    except ValueError:  #raised if `y` is empty.
-        logger.error("Generation failed, try again.")
-        return None
-
-    print("generation ended")
+    outputs = execute_generate(prompt)
+    outputs.save_ply("sample.ply")
+    validation_score = validate()
+    if validation_score < 0.6:
+        outputs = execute_generate(prompt)
     t1 = time()
     print(f" Generation took: {(t1 - t0) / 60.0} min")
 
     buffer = BytesIO()
     outputs['gaussian'][0].save_ply(buffer)
-    outputs['gaussian'][0].save_ply("sample.ply")
-    print("saved")
     buffer.seek(0)
     buffer = buffer.getbuffer()
     t2 = time()
