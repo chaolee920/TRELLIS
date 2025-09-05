@@ -22,12 +22,12 @@ def decompress_spz_files(csv_path, output_dir):
             decompressed = pyspz.decompress(compressed, include_normals=True)
             with open(ply_path, 'wb') as f:
                 f.write(decompressed)
-            pc_ply_path = os.path.join(file_dir, "pointcloud.ply")
-            os.system(f"python /workspace/proj-sub17/3DGS-to-PC/gauss_to_pc.py --input {ply_path} --output {pc_ply_path} --no_render_colours")
+            # pc_ply_path = os.path.join(file_dir, "pointcloud.ply")
+            # os.system(f"python /workspace/proj-sub17/3DGS-to-PC/gauss_to_pc.py --input {ply_path} --output {pc_ply_path} --no_render_colours")
 
             # Convert point cloud to mesh .obj
             obj_path = os.path.join(file_dir, "model.obj")
-            pcd = o3d.io.read_point_cloud(pc_ply_path)
+            pcd = o3d.io.read_point_cloud(ply_path)
             pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
             mesh, _ = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8)
             o3d.io.write_triangle_mesh(obj_path, mesh)
