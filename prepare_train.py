@@ -58,7 +58,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
                     hf_hub_download(repo_id=repo_id, filename=png_file, repo_type="dataset", local_dir=render_dir)
                 
                 data.append({
-                    "file_identifier": os.path.join(output_dir, f"item_{i:05d}"),
+                    "file_identifier": "files/" + f"item_{i:05d}",
                     "uid": base_name,
                     "name": base_name,
                     "source": "404mini",

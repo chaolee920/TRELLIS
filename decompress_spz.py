@@ -5,15 +5,13 @@ import pandas as pd
 def decompress_spz_files(csv_path, output_dir):
     df = pd.read_csv(csv_path)
     
-    
-    
     for idx, row in df.iterrows():
-        file_dir = os.path.join(output_dir, "files", row['file_identifier'])
+        file_dir = os.path.join(output_dir, row['file_identifier'])
         os.makedirs(file_dir, exist_ok=True)
         spz_path = row['model_path']
         render_path = row['render_path']
-        ply_path = os.path.join(file_dir, f"{row['uid']}.ply")
-        png_path = os.path.join(file_dir, f"{row['uid']}.png")
+        ply_path = os.path.join(file_dir, f"gs.ply")
+        png_path = os.path.join(file_dir, f"render.png")
         try:
             # Decompress spz and push to file_identifier directory
             with open(spz_path, 'rb') as f:
@@ -39,6 +37,6 @@ if __name__ == "__main__":
     output_dir = "datasets/404mini"
     try:
         df = decompress_spz_files(csv_path, output_dir)
-        print(f"Decompressed files saved to {output_dir}/ply")
+        print(f"Decompressed files saved to {output_dir}")
     except Exception as e:
         print(f"Error: {e}")
