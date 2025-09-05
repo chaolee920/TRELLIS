@@ -71,8 +71,8 @@ class Custom404MiniDataset:
             features = [torch.stack(f) if isinstance(f, list) else f for f in features]
         except:
             features = features
-        input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=0).to(torch.int64)
-        attention_masks = torch.nn.utils.rnn.pad_sequence(attention_masks, batch_first=True, padding_value=0).to(torch.int64)
+        input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=0).to(torch.float64)
+        attention_masks = torch.nn.utils.rnn.pad_sequence(attention_masks, batch_first=True, padding_value=0).to(torch.float64)
         
         # Debug prints
         print("Collated batch:")
@@ -85,8 +85,8 @@ class Custom404MiniDataset:
         return {
             'latent': latents,
             'features': features,
-            'input_ids': input_ids.to(torch.float),
-            'attention_mask': attention_masks.to(torch.float)
+            'input_ids': input_ids,
+            'attention_mask': attention_masks
         }
 
 def find_ckpt(cfg):
