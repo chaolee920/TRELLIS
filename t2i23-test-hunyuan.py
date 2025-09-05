@@ -82,26 +82,27 @@ def validate():
         print("Validation failed with status code:", response.status_code)
         return 0
 
-while True:
+# while True:
     # guid_scale = float(input())
-    prompts_file = open("/workspace/logs/prompts.txt", "r")
-    cnt = 0
-    while cnt < 20 :
-        torch.cuda.empty_cache()
-        prompt = prompts_file.readline()[:-1]
-        print(f"=====Prompt: {prompt}=====")
-        t0 = time()
-        generate(prompt, guidance_scale=9.0)
+prompts_file = open("/workspace/logs/prompts.txt", "r")
+cnt = 0
+while cnt < 50 :
+    torch.cuda.empty_cache()
+    prompt = prompts_file.readline()[:-2]
+    print(f"=====Prompt: {prompt}=====")
+    t0 = time()
+    generate(prompt, guidance_scale=9.0)
 
-        validation_score = validate()
-        
-        if validation_score < 0.6:
-            generate(prompt, guidance_scale=3.0)
-        
-        print(f"=====Final Score: {validate()}, Generation took: {time() - t0}=====")
-        cnt=cnt+1
-        
-        print("Memory usage:")
-        print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
-        print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
-    prompts_file.close()
+    validation_score = validate()
+    
+    if validation_score < 0.6:
+        print(f"Validation score {validation_score} is less than 0.6, regenerating with lower guidance scale...")
+        generate(prompt, guidance_scale=3.0)
+    
+    print(f"=====Final Score: {validate()}, Generation took: {time() - t0}=====")
+    cnt=cnt+1
+    
+    print("Memory usage:")
+    print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
+    print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
+prompts_file.close()
