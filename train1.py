@@ -47,8 +47,8 @@ class Custom404MiniDataset:
         return {
             'latent': latent,
             'features': features,
-            'input_ids': tokens['input_ids'].squeeze(0).to(torch.int64),
-            'attention_mask': tokens['attention_mask'].squeeze(0).to(torch.int64)
+            'input_ids': tokens['input_ids'].squeeze(0).to(torch.float32),
+            'attention_mask': tokens['attention_mask'].squeeze(0).to(torch.float32)
         }
 
     @staticmethod
