@@ -12,7 +12,8 @@ import random
 
 from trellis import models, datasets, trainers
 from trellis.utils.dist_utils import setup_dist
-
+sys.stdout = open("train.log", "w")
+sys.stderr = sys.stdout
 
 def find_ckpt(cfg):
     # Load checkpoint
