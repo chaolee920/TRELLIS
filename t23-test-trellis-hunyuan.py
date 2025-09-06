@@ -111,8 +111,8 @@ def validate(prompt):
 
 prompts_file = open("/workspace/logs/prompts.txt", "r")
 cnt = 0
-while cnt < 50 :
-    prompt = prompts_file.readline()
+while cnt < 700 :
+    prompt = prompts_file.readline()[:-2]
     t0 = time()
     generate_t23(prompt)
     validation_score = validate(prompt)
