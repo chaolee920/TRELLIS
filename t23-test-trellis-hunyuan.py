@@ -9,6 +9,7 @@ from diffusers import HunyuanDiTPipeline
 import pybase64
 import requests
 from time import time
+from rembg import remove
 
 torch.cuda.empty_cache()
 
