@@ -68,7 +68,6 @@ def main(local_rank, cfg):
     # Load data
     print(cfg.dataset.name)
     print(cfg.data_dir)
-    print(**cfg.dataset.args)
     dataset = getattr(datasets, cfg.dataset.name)(cfg.data_dir, **cfg.dataset.args)
     print('loaded data')
 
