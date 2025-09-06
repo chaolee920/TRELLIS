@@ -90,7 +90,6 @@ if __name__ == '__main__':
     metadata = pd.read_csv(os.path.join(opt.output_dir, 'metadata.csv'))
     if opt.instances is None:
         metadata = metadata[metadata['local_path'].notna()]
-        print(metadata)
         if opt.filter_low_aesthetic_score is not None:
             metadata = metadata[metadata['aesthetic_score'] >= opt.filter_low_aesthetic_score]
         if 'rendered' in metadata.columns:
@@ -119,5 +118,6 @@ if __name__ == '__main__':
     # process objects
     func = partial(_render, output_dir=opt.output_dir, num_views=opt.num_views)
     rendered = dataset_utils.foreach_instance(metadata, opt.output_dir, func, max_workers=opt.max_workers, desc='Rendering objects')
+    print(metadata)
     rendered = pd.concat([rendered, pd.DataFrame.from_records(records)])
     rendered.to_csv(os.path.join(opt.output_dir, f'rendered_{opt.rank}.csv'), index=False)

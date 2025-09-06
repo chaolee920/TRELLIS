@@ -27,9 +27,10 @@ def foreach_instance(metadata, output_dir, func, max_workers=None, desc='Process
             tqdm(total=len(metadata), desc=desc) as pbar:
             def worker(metadatum):
                 try:
-                    local_path = metadatum['file_identifier' + '/model.obj']
+                    local_path = metadatum['local_path']
                     sha256 = metadatum['sha256']
                     file = os.path.join(output_dir, local_path)
+                    print('doing thread')
                     record = func(file, sha256)
                     if record is not None:
                         records.append(record)
