@@ -51,9 +51,9 @@ def _render(file_path, sha256, output_dir, num_views):
     ]
     if file_path.endswith('.blend'):
         args.insert(1, file_path)
-    
+    print('stating blendling')
     call(args, stdout=DEVNULL, stderr=DEVNULL)
-    
+    print('ended blending')
     if os.path.exists(os.path.join(output_folder, 'transforms.json')):
         return {'sha256': sha256, 'rendered': True}
 
