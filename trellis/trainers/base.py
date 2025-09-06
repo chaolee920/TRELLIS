@@ -349,6 +349,7 @@ class Trainer:
                     {k: v[i * batch_size // self.batch_split:(i + 1) * batch_size // self.batch_split] for k, v in data.items()}
                     for i in range(self.batch_split)
                 ]
+                
         elif isinstance(data, list):
             data_list = data
         else:
