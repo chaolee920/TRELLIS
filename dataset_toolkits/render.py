@@ -51,9 +51,9 @@ def _render(file_path, sha256, output_dir, num_views):
     ]
     if file_path.endswith('.blend'):
         args.insert(1, file_path)
-    print('stating blendling')
+    
     call(args, stdout=DEVNULL, stderr=DEVNULL)
-    print('ended blending')
+    
     if os.path.exists(os.path.join(output_folder, 'transforms.json')):
         return {'sha256': sha256, 'rendered': True}
 
@@ -89,6 +89,7 @@ if __name__ == '__main__':
     metadata = pd.read_csv(os.path.join(opt.output_dir, 'metadata.csv'))
     if opt.instances is None:
         metadata = metadata[metadata['local_path'].notna()]
+        print(metadata)
         if opt.filter_low_aesthetic_score is not None:
             metadata = metadata[metadata['aesthetic_score'] >= opt.filter_low_aesthetic_score]
         if 'rendered' in metadata.columns:
