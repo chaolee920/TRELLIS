@@ -10,7 +10,6 @@ import pybase64
 import requests
 from time import time
 from rembg import remove
-import multiprocessing as mp
 
 torch.cuda.set_device(0)
 torch.cuda.empty_cache()
@@ -55,7 +54,7 @@ def validate(prompt, result_path="./sample.ply"):
         return 0
 
 
-def generate_t23(prompt, output_queue):
+def generate_t23(prompt):
     torch.cuda.set_device(0)
     torch.cuda.empty_cache()
     try:
@@ -75,14 +74,14 @@ def generate_t23(prompt, output_queue):
 
     # Render the outputs
     # Save Gaussians as PLY files
-    outputs['gaussian'][0].save_ply("sample1.ply")
-    score = validate(prompt, result_path="./sample1.ply")
+    outputs['gaussian'][0].save_ply("sample.ply")
+    score = validate(prompt)
     torch.cuda.empty_cache()
     print(f"Score from text-to-3d: {score}")
-    output_queue.put(("text-to-3d", outputs['gaussian'][0], score))
+    return (outputs['gaussian'][0], score)
 
 
-def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25, output_queue=None):
+def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     torch.cuda.set_device(1)
     torch.cuda.empty_cache()
     image = t2i_pipe(
@@ -117,14 +116,13 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25, output_qu
         return None
 
     # Save Gaussians as PLY files
-    outputs['gaussian'][0].save_ply("sample2.ply")
-    score = validate(prompt, result_path="./sample2.ply")
+    outputs['gaussian'][0].save_ply("sample.ply")
+    score = validate(prompt)
     torch.cuda.empty_cache()
     print(f"Score from text-to-image-to-3d: {score}")
-    output_queue.put(("text-to-image-to-3d", outputs['gaussian'][0], score))
+    return (outputs['gaussian'][0], score)
 
 
-mp.set_start_method('spawn', force=True)  # for CUDA
 prompts_file = open("/workspace/logs/prompts.txt", "r")
 total_cnt = int(input("Total count: "))
 cnt = 0
@@ -135,23 +133,15 @@ while cnt < total_cnt :
     print(f"====Prompt: {prompt}====")
     t0 = time()
 
-    output_queue = mp.Queue()
-    t23_process = mp.Process(target=generate_t23, args=(prompt, output_queue))
-    t2i23_process = mp.Process(target=generate_t2i23, args=(prompt, 9.0, 25, output_queue))
+    output_t23, score_t23 = generate_t23(prompt)
+    output_t2i23, score_t2i23 = generate_t2i23(prompt, guidance_scale=9.0)
 
-    # Start both processes
-    t23_process.start()
-    t2i23_process.start()
-
-    # Wait for both processes to finish
-    t23_process.join()
-    t2i23_process.join()
-
-    # Retrieve results from the queue
-    results = [output_queue.get() for _ in range(2)]
-    best_method, best_gaussian, best_score = max(results, key=lambda x: x[2])
-    print(f"Best method: {best_method} with score {best_score}")
-    # best_gaussian.save_ply("sample.ply")
+    if score_t23 >= score_t2i23:
+        best_score = score_t23
+        best_gaussian = output_t23
+    else:
+        best_score = score_t2i23
+        best_gaussian = output_t2i23
     
     print(f"====Final Score: {best_score}, Generation took: {time() - t0}====")
     cnt = cnt + 1
@@ -165,7 +155,5 @@ while cnt < total_cnt :
         print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
 
     print("=============================================================")
-
-    output_queue.close()
 
 prompts_file.close()
