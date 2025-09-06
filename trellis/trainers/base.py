@@ -243,13 +243,13 @@ class Trainer:
         # Assign tasks
         
         num_samples_per_process = int(np.ceil(num_samples / self.world_size))
-       
+        print(f'running snapshot {num_samples_per_process}')
         try:
             samples = self.run_snapshot(num_samples_per_process, batch_size=batch_size, verbose=verbose)
         except Exception as e:
             print(f"[ERROR] run_snapshot failed: {e}")
             return {}
-        print(f'running snapshot {num_samples_per_process}')
+        print(f'running snapshot1 {num_samples_per_process}')
         # Preprocess images
         for key in list(samples.keys()):
             if samples[key]['type'] == 'sample':
