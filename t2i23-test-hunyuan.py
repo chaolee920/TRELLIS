@@ -5,7 +5,6 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
                                             # Recommended to set to 'native' if run only once.
 import torch
 from diffusers import HunyuanDiTPipeline
-from accelerate import Accelerator
 from trellis.pipelines import TrellisImageTo3DPipeline
 import pybase64
 import requests
@@ -15,8 +14,6 @@ from rembg import remove
 torch.cuda.empty_cache()
 
 model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
-
-accelerator = Accelerator()
 
 t2i_pipe = HunyuanDiTPipeline.from_pretrained(
     model_id,
@@ -67,7 +64,7 @@ def generate(prompt, guidance_scale=7.5, num_inference_steps=25):
     outputs['gaussian'][0].save_ply("sample.ply")
 
 
-def validate():
+def validate(prompt):
     with open("./sample.ply", "rb") as file:
         file_data = file.read()
     encoded_data = pybase64.b64encode(file_data).decode("utf-8")

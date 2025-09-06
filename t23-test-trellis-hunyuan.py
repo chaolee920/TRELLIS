@@ -4,44 +4,58 @@ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default
                                             # 'auto' is faster but will do benchmarking at the beginning.
                                             # Recommended to set to 'native' if run only once.
 import torch
-
-from diffusers import DiffusionPipeline
-from trellis.pipelines import TrellisImageTo3DPipeline
+from trellis.pipelines import TrellisTextTo3DPipeline, TrellisImageTo3DPipeline
+from diffusers import HunyuanDiTPipeline
 import pybase64
 import requests
 from time import time
-from rembg import remove
 
 torch.cuda.empty_cache()
 
-model_id = "stabilityai/stable-diffusion-2"
-# model_id = "stabilityai/stable-diffusion-2-1"
-# model_id = "stable-diffusion-v1-5/stable-diffusion-v1-5"
-# model_id = "stabilityai/stable-diffusion-xl-base-1.0"
+model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 
-t2i_pipe = DiffusionPipeline.from_pretrained(
-    model_id, 
+t2i_pipe = HunyuanDiTPipeline.from_pretrained(
+    model_id,
     dtype=torch.float16
 ).to("cuda:1")
 
-# t2i_pipe.unet = t2i_pipe.unet.half()
-# t2i_pipe.vae = t2i_pipe.vae.half()
-# t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
+t2i_pipe.transformer = t2i_pipe.transformer.half()
+t2i_pipe.vae = t2i_pipe.vae.half()
+t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
 i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 i23_pipeline.cuda()
 
-def generate(prompt, guidance_scale=7.5, num_inference_steps=25):
+pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
+pipeline.cuda()
+
+
+def generate_t23(prompt):
+    outputs = pipeline.run(prompt + ", 3d style, whole body, cartoon asset", seed=1,
+        sparse_structure_sampler_params={
+            "steps": 30,
+            "cfg_strength": 8,
+        },
+        slat_sampler_params={
+            "steps": 30,
+            "cfg_strength": 4,
+        }
+    )
+
+    # Render the outputs
+    # Save Gaussians as PLY files
+    outputs['gaussian'][0].save_ply("sample.ply")
+
+
+def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     image = t2i_pipe(
         prompt + ", white background, 3d style, whole body, cartoon asset",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
-            "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
-            "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
-            "Extra arms, extra legs, fused fingers, too many fingers, long neck",
-        guidance_scale=guidance_scale, # Example value, adjust for desired output
-        num_inference_steps=num_inference_steps, # Example value, adjust for desired quality/speed).images[0]
-        width=512,
-        height=512,
+                "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
+                "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
+                "Extra arms, extra legs, fused fingers, too many fingers, long neck",
+        guidance_scale=guidance_scale,
+        num_inference_steps=num_inference_steps,
     ).images[0]
 
     image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
@@ -82,17 +96,15 @@ def validate(prompt):
 
 
 prompts_file = open("/workspace/logs/prompts.txt", "r")
-while True:
-    guid_scale = float(input())
-    cnt = 0
-    while cnt < 10 :
-        t0 = time()
-        torch.cuda.empty_cache()
-        prompt = prompts_file.readline()[:-2]
-        generate(prompt=prompt, guidance_scale=guid_scale)
+cnt = 0
+while cnt < 50 :
+    prompt = prompts_file.readline()
+    t0 = time()
+    generate_t23(prompt)
+    validation_score = validate(prompt)
+    if validation_score < 0.6:
+        print(f"Validation score {validation_score} is less than 0.6, regenerating with t2i23...")
+        generate_t2i23(prompt, guidance_scale=9.0)
         validation_score = validate(prompt)
-        # if validation_score < 0.6:
-        #     print(f"Validation score {validation_score} is less than 0.6, regenerating with lower guidance scale...")
-        #     generate(prompt=prompt, guidance_scale=3.0)
-        print(f"=====Final Score: {validation_score}, Generation took: {time() - t0}=====")
-        cnt=cnt+1
+    print(f"=====Final Score: {validation_score}, Generation took: {time() - t0}=====")
+    cnt=cnt+1

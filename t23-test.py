@@ -33,7 +33,7 @@ def generate(prompt):
     outputs['gaussian'][0].save_ply("sample.ply")
 
 
-def validate():
+def validate(prompt):
     with open("./sample.ply", "rb") as file:
         file_data = file.read()
     encoded_data = pybase64.b64encode(file_data).decode("utf-8")
@@ -55,6 +55,6 @@ while cnt < 50 :
     prompt = prompts_file.readline()
     t0 = time()
     generate(prompt)
-    validation_score = validate()
+    validation_score = validate(prompt)
     print(f"=====Final Score: {validation_score}, Generation took: {time() - t0}=====")
     cnt=cnt+1
