@@ -135,21 +135,24 @@ if __name__ == '__main__':
             print(' '.join(['python'] + sys.argv), file=fp)
         with open(os.path.join(cfg.output_dir, 'config.json'), 'w') as fp:
             json.dump(config, fp, indent=4)
-
+    print('run')
     # Run
     if cfg.auto_retry == 0:
         cfg = find_ckpt(cfg)
         if cfg.num_gpus > 1:
             mp.spawn(main, args=(cfg,), nprocs=cfg.num_gpus, join=True)
         else:
+            print('run main')
             main(0, cfg)
     else:
         for rty in range(cfg.auto_retry):
             try:
+                print('run1')
                 cfg = find_ckpt(cfg)
                 if cfg.num_gpus > 1:
                     mp.spawn(main, args=(cfg,), nprocs=cfg.num_gpus, join=True)
                 else:
+                    print('run2')
                     main(0, cfg)
                 break
             except Exception as e:

@@ -434,10 +434,10 @@ Configure TRELLIS for image-to-3D fine-tuning and train on the 100 examples.
 3. **Run Training**:
    ```bash
    python train.py \
-     --config configs/generation/slat_flow_image_dit_L_64l8p2_fp16.json \
-     --output_dir outputs/finetune_404mini_image_100 \
-     --data_dir datasets/404mini \
-     --load_dir path/to/pretrained/image_checkpoint \
+     --config configs/generation/slat_flow_img_dit_L_64l8p2_fp16.json \
+     --output_dir outputs/finetune_404mini \
+     --data_dir datasets/404mini/files \
+     --load_dir /workspace/.hf_home/hub/models--microsoft--TRELLIS-image-large/snapshots/25e0d31ffbebe4b5a97464dd851910efc3002d96 \
      --ckpt latest \
      --num_gpus 1
    ```
