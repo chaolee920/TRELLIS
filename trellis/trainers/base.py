@@ -241,9 +241,10 @@ class Trainer:
             suffix = f'step{self.step:07d}'
 
         # Assign tasks
+        print(f'running snapshot {self.world_size}')
         num_samples_per_process = int(np.ceil(num_samples / self.world_size))
         samples = self.run_snapshot(num_samples_per_process, batch_size=batch_size, verbose=verbose)
-        print('running snapshot')
+        
         # Preprocess images
         for key in list(samples.keys()):
             if samples[key]['type'] == 'sample':
