@@ -371,9 +371,11 @@ class Trainer:
         time_elapsed = 0.0
         while self.step < self.max_steps:
             time_start = time.time()
-
+            print('AAAAAAAAAAAAAAAAAAAAAAAAAA')
             data_list = self.load_data()
+            print('AAAAAAAAAAAAAAAAAAAAAAAABB')
             step_log = self.run_step(data_list)
+            print('AAAAAAAAAAAAAAAAAAAAAAAACC')
 
             time_end = time.time()
             time_elapsed += time_end - time_start
