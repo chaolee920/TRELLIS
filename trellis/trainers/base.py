@@ -193,6 +193,7 @@ class Trainer:
         """
         Sample images from the dataset.
         """
+        print(f'num-samples:    {num_samples}')
         dataloader = torch.utils.data.DataLoader(
             self.dataset,
             batch_size=num_samples,
