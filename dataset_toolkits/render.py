@@ -17,7 +17,6 @@ BLENDER_INSTALLATION_PATH = '/tmp'
 BLENDER_PATH = f'{BLENDER_INSTALLATION_PATH}/blender-3.0.1-linux-x64/blender'
 
 def _install_blender():
-    print(os.path.exists(BLENDER_PATH))
     if not os.path.exists(BLENDER_PATH):
         print('not installed')
         os.system('sudo apt-get update')
@@ -28,7 +27,7 @@ def _install_blender():
 
 def _render(file_path, sha256, output_dir, num_views):
     output_folder = os.path.join(output_dir, 'renders', sha256)
-    
+    print('donig')
     # Build camera {yaw, pitch, radius, fov}
     yaws = []
     pitchs = []
@@ -40,7 +39,7 @@ def _render(file_path, sha256, output_dir, num_views):
     radius = [2] * num_views
     fov = [40 / 180 * np.pi] * num_views
     views = [{'yaw': y, 'pitch': p, 'radius': r, 'fov': f} for y, p, r, f in zip(yaws, pitchs, radius, fov)]
-    
+    print(__file__)
     args = [
         BLENDER_PATH, '-b', '-P', os.path.join(os.path.dirname(__file__), 'blender_script', 'render.py'),
         '--',
