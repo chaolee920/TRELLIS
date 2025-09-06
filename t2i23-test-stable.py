@@ -14,9 +14,9 @@ from rembg import remove
 
 torch.cuda.empty_cache()
 
-model_id = "stabilityai/stable-diffusion-2"
+# model_id = "stabilityai/stable-diffusion-2"
 # model_id = "stabilityai/stable-diffusion-2-1"
-# model_id = "stable-diffusion-v1-5/stable-diffusion-v1-5"
+model_id = "stable-diffusion-v1-5/stable-diffusion-v1-5"
 # model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 
 t2i_pipe = DiffusionPipeline.from_pretrained(
