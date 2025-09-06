@@ -16,10 +16,10 @@ import pybase64
 import requests
 
 from omegaconf import OmegaConf
-from loguru import logger
+import logging
 
 from trellis.pipelines import TrellisImageTo3DPipeline
-# from trellis.pipelines import TrellisTextTo3DPipeline
+from trellis.pipelines import TrellisTextTo3DPipeline
 from trellis.utils import render_utils, postprocessing_utils
 
 from diffusers import HunyuanDiTPipeline
@@ -37,15 +37,40 @@ def get_args():
 args = get_args()
 app = FastAPI()
 
-pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
-# pipeline = TrellisTextTo3DPipeline.from_pretrained("/workspace/vol_sub17/models/TRELLIS-text-xlarge")
+# Configure basic logging to a file
+logging.basicConfig(
+    filename='/workspace/logs/serve.log',  # Name of the log file
+    level=logging.INFO,  # Minimum logging level to capture (e.g., INFO, DEBUG, WARNING, ERROR, CRITICAL)
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Format of log messages
+    filemode='w'  # File mode: 'a' for append (default), 'w' for overwrite
+)
+
+
+torch.cuda.set_device(0)
+torch.cuda.empty_cache()
+
+pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
 pipeline.cuda()
 
-t2i_pipe = HunyuanDiTPipeline.from_pretrained("Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled", torch_dtype=torch.float16).to("cuda:1")
+torch.cuda.set_device(1)
+torch.cuda.empty_cache()
+
+model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
+
+t2i_pipe = HunyuanDiTPipeline.from_pretrained(
+    model_id,
+    dtype=torch.float16
+).to("cuda")
 
 t2i_pipe.transformer = t2i_pipe.transformer.half()
 t2i_pipe.vae = t2i_pipe.vae.half()
 t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
+
+torch.cuda.set_device(2)
+torch.cuda.empty_cache()
+
+i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
+i23_pipeline.cuda()
 
 def get_config() -> OmegaConf:
     config = OmegaConf.load(args.config)
@@ -55,18 +80,52 @@ def get_config() -> OmegaConf:
 # def get_models(config: OmegaConf = Depends(get_config)):
 #     return ModelsPreLoader.preload_model(config, "cuda")
 
-def execute_generate(prompt):
+def generate_t23(prompt):
+    torch.cuda.set_device(0)
+    torch.cuda.empty_cache()
+    try:
+        outputs = pipeline.run(prompt + ", 3d style, whole body, cartoon asset", seed=1,
+            sparse_structure_sampler_params={
+                "steps": 30,
+                "cfg_strength": 8,
+            },
+            slat_sampler_params={
+                "steps": 30,
+                "cfg_strength": 4,
+            }
+        )
+    except Exception as e:
+        print(f"Error during generation: {e}")
+        return None
+
+    # Render the outputs
+    # Save Gaussians as PLY files
+    outputs['gaussian'][0].save_ply("sample.ply")
+    score = validate(prompt)
+    torch.cuda.empty_cache()
+    print(f"Score from text-to-3d: {score}")
+    logging.info(f"Text-to-3D Score: {score}")
+    return (outputs['gaussian'][0], score)
+
+
+def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
+    torch.cuda.set_device(1)
+    torch.cuda.empty_cache()
     image = t2i_pipe(
-        prompt + ", white background, 3d style, whole body, cartoon asset, best quality",
+        prompt + ", white background, 3d style, whole body, cartoon asset",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
                 "Mutilation, extra fingers, mutant hands, poorly drawn hands, poorly drawn faces, mutations, deformities, blurry, dehydrated, poor anatomy," \
                 "Bad proportions, extra limbs, cloned faces, disfigurement, disgusting proportions, deformed limbs, missing arms, missing legs," \
                 "Extra arms, extra legs, fused fingers, too many fingers, long neck",
-        guidance_scale=7.5,
-        num_inference_steps=25,
+        guidance_scale=guidance_scale,
+        num_inference_steps=num_inference_steps,
     ).images[0]
 
     image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
+    torch.cuda.empty_cache()
+
+    torch.cuda.set_device(2)
+    torch.cuda.empty_cache()
 
     # Run the pipeline
     try:
@@ -84,10 +143,15 @@ def execute_generate(prompt):
         return None
 
     # Save Gaussians as PLY files
-    return outputs['gaussian'][0]
+    outputs['gaussian'][0].save_ply("sample.ply")
+    score = validate(prompt)
+    torch.cuda.empty_cache()
+    print(f"Score from text-to-image-to-3d: {score}")
+    logging.info(f"Text-to-Image-to-3D Score: {score}")
+    return (outputs['gaussian'][0], score)
 
 
-def validate():
+def validate(prompt):
     with open("./sample.ply", "rb") as file:
         file_data = file.read()
     encoded_data = pybase64.b64encode(file_data).decode("utf-8")
@@ -114,21 +178,34 @@ async def generate(
     opt:OmegaConf = Depends(get_config),
     #models: list = Depends(get_models),
 ) -> Response:
+    print("=============================================================")
+    print(f"====Prompt: {prompt}====")
+    logging.info("=============================================================")
+    logging.info(f"Processing prompt: {prompt}")
     t0 = time()
-    outputs = execute_generate(prompt)
-    outputs.save_ply("sample.ply")
-    validation_score = validate()
-    if validation_score < 0.6:
-        outputs = execute_generate(prompt)
+
+    output_t23, score_t23 = generate_t23(prompt)
+    output_t2i23, score_t2i23 = generate_t2i23(prompt, guidance_scale=9.0)
+
+    if score_t23 >= score_t2i23:
+        best_score = score_t23
+        best_gaussian = output_t23
+    else:
+        best_score = score_t2i23
+        best_gaussian = output_t2i23
+    
     t1 = time()
-    print(f" Generation took: {(t1 - t0) / 60.0} min")
+    print(f"====Final Score: {best_score}, Generation took: {t1 - t0}====")
+    logging.info(f"Final Score: {best_score}, Generation took: {t1 - t0}")
+    logging.info("=============================================================")
 
     buffer = BytesIO()
-    outputs['gaussian'][0].save_ply(buffer)
+    best_gaussian.save_ply(buffer)
     buffer.seek(0)
     buffer = buffer.getbuffer()
     t2 = time()
     print(f" Saving and encoding took: {(t2 - t1) / 60.0} min")
+    print("=============================================================")
 
     return Response(buffer, media_type="application/octet-stream")
 

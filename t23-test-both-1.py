@@ -11,6 +11,18 @@ import requests
 from time import time
 from rembg import remove
 
+import logging
+import sys
+
+# Configure basic logging to a file
+logging.basicConfig(
+    filename='/workspace/logs/test-both.log',  # Name of the log file
+    level=logging.INFO,  # Minimum logging level to capture (e.g., INFO, DEBUG, WARNING, ERROR, CRITICAL)
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Format of log messages
+    filemode='w'  # File mode: 'a' for append (default), 'w' for overwrite
+)
+
+
 torch.cuda.set_device(0)
 torch.cuda.empty_cache()
 
@@ -78,6 +90,7 @@ def generate_t23(prompt):
     score = validate(prompt)
     torch.cuda.empty_cache()
     print(f"Score from text-to-3d: {score}")
+    logging.info(f"Text-to-3D Score: {score}")
     return (outputs['gaussian'][0], score)
 
 
@@ -120,17 +133,29 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     score = validate(prompt)
     torch.cuda.empty_cache()
     print(f"Score from text-to-image-to-3d: {score}")
+    logging.info(f"Text-to-Image-to-3D Score: {score}")
     return (outputs['gaussian'][0], score)
 
 
 prompts_file = open("/workspace/logs/prompts.txt", "r")
-total_cnt = int(input("Total count: "))
+
+start_num = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+total_cnt = int(sys.argv[2]) if len(sys.argv) > 2 else 10
+for i in range(start_num):
+    prompts_file.readline()
+
 cnt = 0
+
+sum_score = 0
+zero_cnt = 0
+
 while cnt < total_cnt :
     torch.cuda.empty_cache()
     prompt = prompts_file.readline()[:-2]
     print("=============================================================")
     print(f"====Prompt: {prompt}====")
+    logging.info("=============================================================")
+    logging.info(f"Processing prompt: {prompt}")
     t0 = time()
 
     output_t23, score_t23 = generate_t23(prompt)
@@ -144,7 +169,13 @@ while cnt < total_cnt :
         best_gaussian = output_t2i23
     
     print(f"====Final Score: {best_score}, Generation took: {time() - t0}====")
+    logging.info(f"Final Score: {best_score}, Generation took: {time() - t0}")
+    logging.info("=============================================================")
     cnt = cnt + 1
+    if best_score < 0.6:
+        zero_cnt = zero_cnt + 1
+    else:
+        sum_score = sum_score + best_score
 
     print("Memory usage:")
     for i in range(torch.cuda.device_count()):
@@ -157,3 +188,8 @@ while cnt < total_cnt :
     print("=============================================================")
 
 prompts_file.close()
+logging.info(f"Total Prompts Processed: {total_cnt}")
+logging.info(f"Number of Zero Scores: {zero_cnt}")
+logging.info(f"Number of Non-Zero Scores: {total_cnt - zero_cnt}")
+logging.info(f"Average Scores: {sum_score / total_cnt if total_cnt > 0 else 0}")
+logging.info(f"Average Score (excluding zeros): {sum_score / (total_cnt - zero_cnt) if (total_cnt - zero_cnt) > 0 else 0}")
