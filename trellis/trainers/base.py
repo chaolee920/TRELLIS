@@ -197,7 +197,7 @@ class Trainer:
         print(f'self.dataset: {self.dataset}')
         dataloader = torch.utils.data.DataLoader(
             self.dataset,
-            batch_size=100,
+            batch_size=4,
             num_workers=0,
             shuffle=True,
             collate_fn=self.dataset.collate_fn if hasattr(self.dataset, 'collate_fn') else None,
@@ -243,7 +243,7 @@ class Trainer:
         # Assign tasks
         num_samples_per_process = int(np.ceil(num_samples / self.world_size))
         samples = self.run_snapshot(num_samples_per_process, batch_size=batch_size, verbose=verbose)
-
+        print('running snapshot')
         # Preprocess images
         for key in list(samples.keys()):
             if samples[key]['type'] == 'sample':
