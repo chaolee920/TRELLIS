@@ -70,7 +70,7 @@ def load_404mini_dataset(repo_id="404-Gen/404mini", output_dir="datasets/404mini
                 data.append({
                     "sha256": sha256,
                     "file_identifier": "files/" + f"item_{i:05d}",
-                    "local_path":output_dir+"files/" + f"item_{i:05d}",
+                    "local_path":"files/" + f"item_{i:05d}" + '/model.obj',
                     "uid": base_name,
                     "name": base_name,
                     "source": "404mini",
