@@ -17,6 +17,7 @@ BLENDER_INSTALLATION_PATH = '/tmp'
 BLENDER_PATH = f'{BLENDER_INSTALLATION_PATH}/blender-3.0.1-linux-x64/blender'
 
 def _install_blender():
+    print(os.path.exists(BLENDER_PATH))
     if not os.path.exists(BLENDER_PATH):
         print('not installed')
         os.system('sudo apt-get update')
