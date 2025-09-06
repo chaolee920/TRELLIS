@@ -330,6 +330,7 @@ class Trainer:
         """
         Load data.
         """
+        print("Start loading data")
         if self.prefetch_data:
             if self._data_prefetched is None:
                 self._data_prefetched = recursive_to_device(next(self.data_iterator), self.device, non_blocking=True)
@@ -337,7 +338,7 @@ class Trainer:
             self._data_prefetched = recursive_to_device(next(self.data_iterator), self.device, non_blocking=True)
         else:
             data = recursive_to_device(next(self.data_iterator), self.device, non_blocking=True)
-        
+        print("loading data")
         # if the data is a dict, we need to split it into multiple dicts with batch_size_per_gpu
         if isinstance(data, dict):
             if self.batch_split == 1:

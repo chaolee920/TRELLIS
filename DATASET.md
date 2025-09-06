@@ -56,6 +56,7 @@ For example, to load the metadata of the ObjaverseXL (sketchfab) subset and save
 python dataset_toolkits/build_metadata.py 404mini --output_dir datasets/404mini
 python dataset_toolkits/build_metadata.py ObjaverseXL --output_dir datasets/ObjaverseXL_sketchfab
 python dataset_toolkits/build_metadata.py Toys4k --output_dir datasets/Toys4k
+python dataset_toolkits/build_metadata.py ABO --output_dir datasets/ABO
 ```
 
 ### Step 3: Download Data
@@ -77,6 +78,8 @@ For example, to download the ObjaverseXL (sketchfab) subset and save it to `data
 
 ```
 python dataset_toolkits/download.py ObjaverseXL --output_dir datasets/ObjaverseXL_sketchfab --world_size 160000
+python dataset_toolkits/download.py Toys4k --output_dir datasets/Toys4k --world_size 3000
+python dataset_toolkits/download.py ABO --output_dir datasets/ABO --world_size 4500
 ```
 
 Some datasets may require interactive login to Hugging Face or manual downloading. Please follow the instructions given by the toolkits.
