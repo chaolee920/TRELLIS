@@ -27,6 +27,7 @@
       "min_aesthetic_score": 4.5,
       "max_num_voxels": 32768,
       "image_size": 518,
+
       "normalization": {
         "mean": [
           -2.1687545776367188, -0.004347046371549368, -0.13352349400520325,
