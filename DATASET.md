@@ -54,6 +54,8 @@ For example, to load the metadata of the ObjaverseXL (sketchfab) subset and save
 
 ```
 python dataset_toolkits/build_metadata.py 404mini --output_dir datasets/404mini
+python dataset_toolkits/build_metadata.py ObjaverseXL --output_dir datasets/ObjaverseXL_sketchfab
+python dataset_toolkits/build_metadata.py Toys4k --output_dir datasets/Toys4k
 ```
 
 ### Step 3: Download Data
@@ -219,7 +221,7 @@ python dataset_toolkits/render_cond.py <SUBSET> --output_dir <OUTPUT_DIR> [--num
 For example, to render image conditions for the ObjaverseXL (sketchfab) subset and save it to `datasets/ObjaverseXL_sketchfab`, we can run:
 
 ```
-python dataset_toolkits/render_cond.py ObjaverseXL --output_dir datasets/ObjaverseXL_sketchfab
+python dataset_toolkits/render_cond.py 404mini --output_dir datasets/404mini
 ```
 
 Then update the metadata file with:
