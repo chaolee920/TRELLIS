@@ -197,7 +197,7 @@ class Trainer:
         print(f'self.dataset: {self.dataset}')
         dataloader = torch.utils.data.DataLoader(
             self.dataset,
-            batch_size=num_samples,
+            batch_size=100,
             num_workers=0,
             shuffle=True,
             collate_fn=self.dataset.collate_fn if hasattr(self.dataset, 'collate_fn') else None,
