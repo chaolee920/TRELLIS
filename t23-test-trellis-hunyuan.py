@@ -11,10 +11,9 @@ import requests
 from time import time
 from rembg import remove
 
+torch.cuda.set_device(1)
 torch.cuda.empty_cache()
 
-
-torch.cuda.set_device(1)
 model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 
 t2i_pipe = HunyuanDiTPipeline.from_pretrained(
@@ -27,11 +26,13 @@ t2i_pipe.vae = t2i_pipe.vae.half()
 t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
 torch.cuda.set_device(2)
+torch.cuda.empty_cache()
 
 i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 i23_pipeline.cuda()
 
 torch.cuda.set_device(0)
+torch.cuda.empty_cache()
 
 pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
 pipeline.cuda()
@@ -40,20 +41,25 @@ pipeline.cuda()
 def generate_t23(prompt):
     torch.cuda.set_device(0)
     torch.cuda.empty_cache()
-    outputs = pipeline.run(prompt + ", 3d style, whole body, cartoon asset", seed=1,
-        sparse_structure_sampler_params={
-            "steps": 30,
-            "cfg_strength": 8,
-        },
-        slat_sampler_params={
-            "steps": 30,
-            "cfg_strength": 4,
-        }
-    )
+    try:
+        outputs = pipeline.run(prompt + ", 3d style, whole body, cartoon asset", seed=1,
+            sparse_structure_sampler_params={
+                "steps": 30,
+                "cfg_strength": 8,
+            },
+            slat_sampler_params={
+                "steps": 30,
+                "cfg_strength": 4,
+            }
+        )
+    except Exception as e:
+        print(f"Error during generation: {e}")
+        return None
 
     # Render the outputs
     # Save Gaussians as PLY files
     outputs['gaussian'][0].save_ply("sample.ply")
+    torch.cuda.empty_cache()
 
 
 def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
@@ -70,6 +76,7 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     ).images[0]
 
     image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
+    torch.cuda.empty_cache()
 
     torch.cuda.set_device(2)
     torch.cuda.empty_cache()
@@ -91,6 +98,7 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
 
     # Save Gaussians as PLY files
     outputs['gaussian'][0].save_ply("sample.ply")
+    torch.cuda.empty_cache()
 
 
 def validate(prompt):
