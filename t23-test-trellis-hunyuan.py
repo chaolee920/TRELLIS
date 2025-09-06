@@ -13,27 +13,33 @@ from rembg import remove
 
 torch.cuda.empty_cache()
 
+
+torch.cuda.set_device(1)
 model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 
 t2i_pipe = HunyuanDiTPipeline.from_pretrained(
     model_id,
     dtype=torch.float16
-).to("cuda:1")
+).to("cuda")
 
 t2i_pipe.transformer = t2i_pipe.transformer.half()
 t2i_pipe.vae = t2i_pipe.vae.half()
 t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
-i23_device = torch.device("cuda:2")
+torch.cuda.set_device(2)
 
 i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
-i23_pipeline.to(device=i23_device)
+i23_pipeline.cuda()
+
+torch.cuda.set_device(0)
 
 pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
 pipeline.cuda()
 
 
 def generate_t23(prompt):
+    torch.cuda.set_device(0)
+    torch.cuda.empty_cache()
     outputs = pipeline.run(prompt + ", 3d style, whole body, cartoon asset", seed=1,
         sparse_structure_sampler_params={
             "steps": 30,
@@ -51,6 +57,8 @@ def generate_t23(prompt):
 
 
 def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
+    torch.cuda.set_device(1)
+    torch.cuda.empty_cache()
     image = t2i_pipe(
         prompt + ", white background, 3d style, whole body, cartoon asset",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
@@ -62,6 +70,9 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     ).images[0]
 
     image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
+
+    torch.cuda.set_device(2)
+    torch.cuda.empty_cache()
 
     # Run the pipeline
     try:
