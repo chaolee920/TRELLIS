@@ -77,7 +77,6 @@ def validate(prompt, result_path="./sample.ply"):
 
 
 def generate_t23(prompt):
-    global pipeline
     torch.cuda.set_device(0)
     aggressive_cleanup()
     try:
@@ -106,7 +105,6 @@ def generate_t23(prompt):
 
 
 def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
-    global t2i_pipe, i23_pipeline
     torch.cuda.set_device(1)
     aggressive_cleanup()
     image = t2i_pipe(
