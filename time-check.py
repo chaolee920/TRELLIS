@@ -89,7 +89,6 @@ def generate_t23(prompt):
     score = validate(prompt)
     aggressive_cleanup()
     print(f"Score from text-to-3d: {score}")
-    logging.info(f"Text-to-3D Score: {score}")
     return (outputs['gaussian'][0], score)
 
 
@@ -132,7 +131,6 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     score = validate(prompt)
     aggressive_cleanup()
     print(f"Score from text-to-image-to-3d: {score}")
-    logging.info(f"Text-to-Image-to-3D Score: {score}")
     return (outputs['gaussian'][0], score)
 
 
