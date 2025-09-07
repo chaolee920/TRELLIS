@@ -14,6 +14,7 @@ def recursive_to_device(
     """
     Recursively move all tensors in a data structure to a device.
     """
+    print(f'moving {data}')
     if hasattr(data, "to"):
         return data.to(device, non_blocking=non_blocking)
     elif isinstance(data, (list, tuple)):
