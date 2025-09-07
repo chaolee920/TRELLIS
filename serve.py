@@ -12,6 +12,7 @@ from time import time
 from PIL import Image
 import imageio
 import torch
+import gc
 import pybase64
 import requests
 
@@ -37,6 +38,16 @@ def get_args():
 args = get_args()
 app = FastAPI()
 
+
+def aggressive_cleanup():
+    """Perform aggressive memory cleanup"""
+    gc.collect()
+    for i in range(torch.cuda.device_count()):
+        torch.cuda.set_device(i)
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+
+
 # Configure basic logging to a file
 logging.basicConfig(
     filename='/workspace/logs/serve.log',  # Name of the log file
@@ -45,15 +56,14 @@ logging.basicConfig(
     filemode='w'  # File mode: 'a' for append (default), 'w' for overwrite
 )
 
-
+aggressive_cleanup()
 torch.cuda.set_device(0)
-torch.cuda.empty_cache()
 
 pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
 pipeline.cuda()
 
+aggressive_cleanup()
 torch.cuda.set_device(1)
-torch.cuda.empty_cache()
 
 model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 
@@ -66,8 +76,8 @@ t2i_pipe.transformer = t2i_pipe.transformer.half()
 t2i_pipe.vae = t2i_pipe.vae.half()
 t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
+aggressive_cleanup()
 torch.cuda.set_device(2)
-torch.cuda.empty_cache()
 
 i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 i23_pipeline.cuda()
@@ -81,8 +91,8 @@ def get_config() -> OmegaConf:
 #     return ModelsPreLoader.preload_model(config, "cuda")
 
 def generate_t23(prompt):
+    aggressive_cleanup()
     torch.cuda.set_device(0)
-    torch.cuda.empty_cache()
     try:
         outputs = pipeline.run(prompt + ", 3d style, whole body, cartoon asset", seed=1,
             sparse_structure_sampler_params={
@@ -102,15 +112,15 @@ def generate_t23(prompt):
     # Save Gaussians as PLY files
     outputs['gaussian'][0].save_ply("sample.ply")
     score = validate(prompt)
-    torch.cuda.empty_cache()
+    aggressive_cleanup()
     print(f"Score from text-to-3d: {score}")
     logging.info(f"Text-to-3D Score: {score}")
     return (outputs['gaussian'][0], score)
 
 
 def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
+    aggressive_cleanup()
     torch.cuda.set_device(1)
-    torch.cuda.empty_cache()
     image = t2i_pipe(
         prompt + ", white background, 3d style, whole body, cartoon asset",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
@@ -122,10 +132,9 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     ).images[0]
 
     image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
-    torch.cuda.empty_cache()
 
+    aggressive_cleanup()
     torch.cuda.set_device(2)
-    torch.cuda.empty_cache()
 
     # Run the pipeline
     try:
@@ -145,7 +154,7 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     # Save Gaussians as PLY files
     outputs['gaussian'][0].save_ply("sample.ply")
     score = validate(prompt)
-    torch.cuda.empty_cache()
+    aggressive_cleanup()
     print(f"Score from text-to-image-to-3d: {score}")
     logging.info(f"Text-to-Image-to-3D Score: {score}")
     return (outputs['gaussian'][0], score)
