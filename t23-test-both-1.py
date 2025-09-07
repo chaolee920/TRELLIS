@@ -24,14 +24,22 @@ logging.basicConfig(
 )
 
 
+def aggressive_cleanup():
+    """Perform aggressive memory cleanup"""
+    gc.collect()
+    for i in range(torch.cuda.device_count()):
+        torch.cuda.set_device(i)
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+
+aggressive_cleanup()
 torch.cuda.set_device(0)
-torch.cuda.empty_cache()
 
 pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
 pipeline.cuda()
 
+aggressive_cleanup()
 torch.cuda.set_device(1)
-torch.cuda.empty_cache()
 
 model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 
@@ -44,20 +52,11 @@ t2i_pipe.transformer = t2i_pipe.transformer.half()
 t2i_pipe.vae = t2i_pipe.vae.half()
 t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
+aggressive_cleanup()
 torch.cuda.set_device(2)
-torch.cuda.empty_cache()
 
 i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 i23_pipeline.cuda()
-
-
-def aggressive_cleanup():
-    """Perform aggressive memory cleanup"""
-    gc.collect()
-    for i in range(torch.cuda.device_count()):
-        torch.cuda.set_device(i)
-        torch.cuda.empty_cache()
-        torch.cuda.synchronize()
 
 
 def validate(prompt, result_path="./sample.ply"):
@@ -88,7 +87,8 @@ def generate_t23(prompt):
             slat_sampler_params={
                 "steps": 30,
                 "cfg_strength": 4,
-            }
+            },
+            formats=['gaussian']
         )
     except Exception as e:
         print(f"Error during generation: {e}")
@@ -132,7 +132,8 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
             slat_sampler_params={
                 "steps": 30,
                 "cfg_strength": 4,
-            }
+            },
+            formats=['gaussian']
         )
     except ValueError:  # raised if `y` is empty.
         return None
@@ -162,6 +163,15 @@ while cnt < total_cnt :
     aggressive_cleanup()
     prompt = prompts_file.readline()[:-2]
     print("=============================================================")
+
+    # Check GPU memory usage
+    print("Memory usage:")
+    for i in range(torch.cuda.device_count()):
+        torch.cuda.set_device(i)
+        print(f"Device {i}:")
+        print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
+        print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
+
     print(f"====Prompt: {prompt}====")
     logging.info("=============================================================")
     logging.info(f"Processing prompt: {prompt}")
@@ -186,6 +196,7 @@ while cnt < total_cnt :
     else:
         sum_score = sum_score + best_score
 
+    # Check GPU memory usage
     print("Memory usage:")
     for i in range(torch.cuda.device_count()):
         torch.cuda.set_device(i)
