@@ -13,6 +13,7 @@ from rembg import remove
 
 import logging
 import sys
+import gc
 
 # Configure basic logging to a file
 logging.basicConfig(
@@ -50,6 +51,15 @@ i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image
 i23_pipeline.cuda()
 
 
+def aggressive_cleanup():
+    """Perform aggressive memory cleanup"""
+    gc.collect()
+    for i in range(torch.cuda.device_count()):
+        torch.cuda.set_device(i)
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+
+
 def validate(prompt, result_path="./sample.ply"):
     with open(result_path, "rb") as file:
         file_data = file.read()
@@ -67,8 +77,9 @@ def validate(prompt, result_path="./sample.ply"):
 
 
 def generate_t23(prompt):
+    global pipeline
     torch.cuda.set_device(0)
-    torch.cuda.empty_cache()
+    aggressive_cleanup()
     try:
         outputs = pipeline.run(prompt + ", 3d style, whole body, cartoon asset", seed=1,
             sparse_structure_sampler_params={
@@ -88,15 +99,16 @@ def generate_t23(prompt):
     # Save Gaussians as PLY files
     outputs['gaussian'][0].save_ply("sample.ply")
     score = validate(prompt)
-    torch.cuda.empty_cache()
+    aggressive_cleanup()
     print(f"Score from text-to-3d: {score}")
     logging.info(f"Text-to-3D Score: {score}")
     return (outputs['gaussian'][0], score)
 
 
 def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
+    global t2i_pipe, i23_pipeline
     torch.cuda.set_device(1)
-    torch.cuda.empty_cache()
+    aggressive_cleanup()
     image = t2i_pipe(
         prompt + ", white background, 3d style, whole body, cartoon asset",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
@@ -108,10 +120,10 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     ).images[0]
 
     image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
-    torch.cuda.empty_cache()
+    aggressive_cleanup()
 
     torch.cuda.set_device(2)
-    torch.cuda.empty_cache()
+    aggressive_cleanup()
 
     # Run the pipeline
     try:
@@ -131,7 +143,7 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     # Save Gaussians as PLY files
     outputs['gaussian'][0].save_ply("sample.ply")
     score = validate(prompt)
-    torch.cuda.empty_cache()
+    aggressive_cleanup()
     print(f"Score from text-to-image-to-3d: {score}")
     logging.info(f"Text-to-Image-to-3D Score: {score}")
     return (outputs['gaussian'][0], score)
@@ -150,7 +162,7 @@ sum_score = 0
 zero_cnt = 0
 
 while cnt < total_cnt :
-    torch.cuda.empty_cache()
+    aggressive_cleanup()
     prompt = prompts_file.readline()[:-2]
     print("=============================================================")
     print(f"====Prompt: {prompt}====")
