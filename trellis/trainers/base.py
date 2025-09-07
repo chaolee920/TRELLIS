@@ -337,7 +337,21 @@ class Trainer:
             print('A1')
             if self._data_prefetched is None:
                 print("B1")
-                self._data_prefetched = recursive_to_device(next(self.data_iterator), self.device, non_blocking=True)
+
+                dataloader = torch.utils.data.DataLoader(
+                    self.dataset,
+                    batch_size=4,
+                    num_workers=0,
+                    shuffle=True,
+                    collate_fn=self.dataset.collate_fn if hasattr(self.dataset, 'collate_fn') else None,
+                )
+                print("11111111111111")
+                data = next(iter(dataloader))
+                print("222222222222")
+                data = recursive_to_device(data, self.device)
+
+
+                self._data_prefetched = recursive_to_device(data, self.device, non_blocking=True)
             print('C1')
             data = self._data_prefetched
             print('D1')
