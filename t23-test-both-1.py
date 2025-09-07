@@ -77,8 +77,8 @@ def validate(prompt, result_path="./sample.ply"):
 
 
 def generate_t23(prompt):
-    torch.cuda.set_device(0)
     aggressive_cleanup()
+    torch.cuda.set_device(0)
     try:
         outputs = pipeline.run(prompt + ", 3d style, whole body, cartoon asset", seed=1,
             sparse_structure_sampler_params={
@@ -105,8 +105,8 @@ def generate_t23(prompt):
 
 
 def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
-    torch.cuda.set_device(1)
     aggressive_cleanup()
+    torch.cuda.set_device(1)
     image = t2i_pipe(
         prompt + ", white background, 3d style, whole body, cartoon asset",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
@@ -121,7 +121,6 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     aggressive_cleanup()
 
     torch.cuda.set_device(2)
-    aggressive_cleanup()
 
     # Run the pipeline
     try:
@@ -190,7 +189,6 @@ while cnt < total_cnt :
     print("Memory usage:")
     for i in range(torch.cuda.device_count()):
         torch.cuda.set_device(i)
-        torch.cuda.empty_cache()
         print(f"Device {i}:")
         print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
         print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
