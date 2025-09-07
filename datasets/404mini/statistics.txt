@@ -1,0 +1,13 @@
+Statistics:
+  - Number of assets: 3
+  - Number of assets downloaded: 3
+  - Number of assets rendered: 3
+  - Number of assets voxelized: 3
+  - Number of assets with image features extracted:
+    - dinov2_vitl14_reg: 3
+  - Number of assets with latents extracted:
+    - dinov2_vitl14_reg_slat_enc_swin8_B_64l8_fp16: 3
+  - Number of assets with sparse structure latents extracted:
+    - ss_enc_conv3d_16l8_fp16: 3
+  - Number of assets with captions: 3
+  - Number of assets with image conditions: 3

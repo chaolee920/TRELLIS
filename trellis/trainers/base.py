@@ -131,6 +131,9 @@ class Trainer:
         """
         Prepare dataloader.
         """
+        print(f"Dataset size: {len(self.dataset)}")
+        if len(self.dataset) == 0:
+            raise ValueError("Dataset is empty. Check dataset initialization.")
         self.data_sampler = ResumableSampler(
             self.dataset,
             shuffle=True,
@@ -193,34 +196,21 @@ class Trainer:
         """
         Sample images from the dataset.
         """
-        print(f'num-samples:    {num_samples}')
-        print(f'self.dataset: {self.dataset}')
-        sample = next(iter(self.dataset))
-        print(sample)
         dataloader = torch.utils.data.DataLoader(
             self.dataset,
-            batch_size=4,
+            batch_size=num_samples,
             num_workers=0,
             shuffle=True,
             collate_fn=self.dataset.collate_fn if hasattr(self.dataset, 'collate_fn') else None,
         )
-        print("11111111111111")
         data = next(iter(dataloader))
-        print("222222222222")
         data = recursive_to_device(data, self.device)
-        print("333333333333")
         vis = self.visualize_sample(data)
-        print("4444444444444")
         if isinstance(vis, dict):
-            print("55555555555")
             save_cfg = [(f'dataset_{k}', v) for k, v in vis.items()]
-            print("66666666666")
         else:
-            print("7777777777777")
             save_cfg = [('dataset', vis)]
-            print("888888888888")
         for name, image in save_cfg:
-            print("999999999999")
             utils.save_image(
                 image,
                 os.path.join(self.output_dir, 'samples', f'{name}.jpg'),
@@ -228,7 +218,6 @@ class Trainer:
                 normalize=True,
                 value_range=self.dataset.value_range,
             )
-        print("0000000000000000")
 
     @torch.no_grad()
     def snapshot(self, suffix=None, num_samples=64, batch_size=4, verbose=False):
@@ -243,15 +232,9 @@ class Trainer:
             suffix = f'step{self.step:07d}'
 
         # Assign tasks
-        
         num_samples_per_process = int(np.ceil(num_samples / self.world_size))
-        print(f'running snapshot {num_samples_per_process}')
-        try:
-            samples = self.run_snapshot(num_samples_per_process, batch_size=batch_size, verbose=verbose)
-        except Exception as e:
-            print(f"[ERROR] run_snapshot failed: {e}")
-            return {}
-        print(f'running snapshot1 {num_samples_per_process}')
+        samples = self.run_snapshot(num_samples_per_process, batch_size=batch_size, verbose=verbose)
+
         # Preprocess images
         for key in list(samples.keys()):
             if samples[key]['type'] == 'sample':
@@ -332,34 +315,17 @@ class Trainer:
         """
         Load data.
         """
-        print('start loading data')
+        print(f"Dataset size: {len(self.dataset)}")
+        print(f"Next Iterator: {next(self.data_iterator)}")
+        # print(self.data_loader)
         if self.prefetch_data:
-            print('A1')
             if self._data_prefetched is None:
-                print("B1")
-
-                dataloader = torch.utils.data.DataLoader(
-                    self.dataset,
-                    batch_size=4,
-                    num_workers=0,
-                    shuffle=True,
-                    collate_fn=self.dataset.collate_fn if hasattr(self.dataset, 'collate_fn') else None,
-                )
-                print("11111111111111")
-                data = next(iter(dataloader))
-                print("222222222222")
-                data = recursive_to_device(data, self.device)
-
-
-                self._data_prefetched = recursive_to_device(data, self.device, non_blocking=True)
-            print('C1')
+                self._data_prefetched = recursive_to_device(next(self.data_iterator), self.device, non_blocking=True)
             data = self._data_prefetched
-            print('D1')
             self._data_prefetched = recursive_to_device(next(self.data_iterator), self.device, non_blocking=True)
-            print("E1")
         else:
             data = recursive_to_device(next(self.data_iterator), self.device, non_blocking=True)
-        print('loading data progress.....')
+        
         # if the data is a dict, we need to split it into multiple dicts with batch_size_per_gpu
         if isinstance(data, dict):
             if self.batch_split == 1:
@@ -370,7 +336,6 @@ class Trainer:
                     {k: v[i * batch_size // self.batch_split:(i + 1) * batch_size // self.batch_split] for k, v in data.items()}
                     for i in range(self.batch_split)
                 ]
-                
         elif isinstance(data, list):
             data_list = data
         else:
@@ -402,11 +367,9 @@ class Trainer:
         time_elapsed = 0.0
         while self.step < self.max_steps:
             time_start = time.time()
-            print('AAAAAAAAAAAAAAAAAAAAAAAAAA')
+
             data_list = self.load_data()
-            print('AAAAAAAAAAAAAAAAAAAAAAAABB')
             step_log = self.run_step(data_list)
-            print('AAAAAAAAAAAAAAAAAAAAAAAACC')
 
             time_end = time.time()
             time_elapsed += time_end - time_start
