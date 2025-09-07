@@ -68,6 +68,8 @@ def main(local_rank, cfg):
     # Load data
     dataset = getattr(datasets, cfg.dataset.name)(cfg.data_dir, **cfg.dataset.args)
     print(f'loaded data : {dataset}')
+    sample = next(iter(dataset))
+    print(sample)
 
     # Build model
     model_dict = {
