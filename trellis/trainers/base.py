@@ -334,10 +334,15 @@ class Trainer:
         """
         print('start loading data')
         if self.prefetch_data:
+            print('A1')
             if self._data_prefetched is None:
+                print("B1")
                 self._data_prefetched = recursive_to_device(next(self.data_iterator), self.device, non_blocking=True)
+            print('C1')
             data = self._data_prefetched
+            print('D1')
             self._data_prefetched = recursive_to_device(next(self.data_iterator), self.device, non_blocking=True)
+            print("E1")
         else:
             data = recursive_to_device(next(self.data_iterator), self.device, non_blocking=True)
         print('loading data progress.....')
