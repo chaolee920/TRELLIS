@@ -195,6 +195,8 @@ class Trainer:
         """
         print(f'num-samples:    {num_samples}')
         print(f'self.dataset: {self.dataset}')
+        sample = next(iter(self.dataset))
+        print(sample)
         dataloader = torch.utils.data.DataLoader(
             self.dataset,
             batch_size=4,
