@@ -70,11 +70,11 @@ def generate_t23(prompt):
     try:
         outputs = pipeline.run(prompt + ", 3d style, whole body, cartoon asset", seed=1,
             sparse_structure_sampler_params={
-                "steps": 30,
+                "steps": 20,
                 "cfg_strength": 8,
             },
             slat_sampler_params={
-                "steps": 30,
+                "steps": 20,
                 "cfg_strength": 4,
             },
             formats=['gaussian']
@@ -114,11 +114,11 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     try:
         outputs = i23_pipeline.run(image,
             sparse_structure_sampler_params={
-                "steps": 30,
+                "steps": 20,
                 "cfg_strength": 8,
             },
             slat_sampler_params={
-                "steps": 30,
+                "steps": 20,
                 "cfg_strength": 4,
             },
             formats=['gaussian']
@@ -150,7 +150,7 @@ print(f"====Prompt: {prompt}====")
 t0 = time()
 
 output_t23, score_t23 = generate_t23(prompt)
-output_t2i23, score_t2i23 = generate_t2i23(prompt, guidance_scale=9.0)
+output_t2i23, score_t2i23 = generate_t2i23(prompt, guidance_scale=9.0, num_inference_steps=20)
 
 if score_t23 >= score_t2i23:
     best_score = score_t23

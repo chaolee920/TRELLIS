@@ -33,13 +33,13 @@ def aggressive_cleanup():
         torch.cuda.synchronize()
 
 aggressive_cleanup()
-# torch.cuda.set_device(0)
+torch.cuda.set_device(0)
 
 pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
 pipeline.cuda()
 
 aggressive_cleanup()
-# torch.cuda.set_device(1)
+torch.cuda.set_device(1)
 
 model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 
@@ -53,7 +53,7 @@ t2i_pipe.vae = t2i_pipe.vae.half()
 t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
 aggressive_cleanup()
-# torch.cuda.set_device(2)
+torch.cuda.set_device(2)
 
 i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 i23_pipeline.cuda()
@@ -77,15 +77,15 @@ def validate(prompt, result_path="./sample.ply"):
 
 def generate_t23(prompt):
     aggressive_cleanup()
-    # torch.cuda.set_device(0)
+    torch.cuda.set_device(0)
     try:
         outputs = pipeline.run(prompt + ", 3d style, whole body, cartoon asset", seed=1,
             sparse_structure_sampler_params={
-                "steps": 20,
+                "steps": 30,
                 "cfg_strength": 8,
             },
             slat_sampler_params={
-                "steps": 20,
+                "steps": 30,
                 "cfg_strength": 4,
             },
             formats=['gaussian']
@@ -106,7 +106,7 @@ def generate_t23(prompt):
 
 def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     aggressive_cleanup()
-    # torch.cuda.set_device(1)
+    torch.cuda.set_device(1)
     image = t2i_pipe(
         prompt + ", white background, 3d style, whole body, cartoon asset",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
@@ -120,17 +120,17 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
     image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
     aggressive_cleanup()
 
-    # torch.cuda.set_device(2)
+    torch.cuda.set_device(2)
 
     # Run the pipeline
     try:
         outputs = i23_pipeline.run(image,
             sparse_structure_sampler_params={
-                "steps": 20,
+                "steps": 30,
                 "cfg_strength": 8,
             },
             slat_sampler_params={
-                "steps": 20,
+                "steps": 30,
                 "cfg_strength": 4,
             },
             formats=['gaussian']
@@ -178,7 +178,7 @@ while cnt < total_cnt :
     t0 = time()
 
     output_t23, score_t23 = generate_t23(prompt)
-    output_t2i23, score_t2i23 = generate_t2i23(prompt, guidance_scale=9.0, num_inference_steps=20)
+    output_t2i23, score_t2i23 = generate_t2i23(prompt, guidance_scale=9.0)
 
     if score_t23 >= score_t2i23:
         best_score = score_t23
