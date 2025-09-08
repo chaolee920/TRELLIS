@@ -194,7 +194,7 @@ async def generate(
     t0 = time()
 
     output_t23, score_t23 = generate_t23(prompt)
-    if score_t2i23 > 0.65:
+    if score_t23 > 0.65:
         best_score = score_t23
         best_gaussian = output_t23
     else:
