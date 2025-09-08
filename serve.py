@@ -211,9 +211,6 @@ async def generate(
     logging.info(f"Final Score: {best_score}, Generation took: {t1 - t0}")
     logging.info("=============================================================")
 
-    if best_score < 0.6:
-        return None
-
     buffer = BytesIO()
     best_gaussian.save_ply(buffer)
     buffer.seek(0)
