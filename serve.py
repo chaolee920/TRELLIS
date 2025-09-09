@@ -3,6 +3,7 @@ import os
 os.environ['SPCONV_ALGO'] = 'native'
 
 from io import BytesIO
+import asyncio
 
 from fastapi import FastAPI, Depends, Form
 from fastapi.responses import Response
@@ -90,7 +91,7 @@ def get_config() -> OmegaConf:
 # def get_models(config: OmegaConf = Depends(get_config)):
 #     return ModelsPreLoader.preload_model(config, "cuda")
 
-def generate_t23(prompt):
+def _generate_t23_sync(prompt):
     aggressive_cleanup()
     # torch.cuda.set_device(0)
     try:
@@ -110,15 +111,18 @@ def generate_t23(prompt):
 
     # Render the outputs
     # Save Gaussians as PLY files
-    outputs['gaussian'][0].save_ply("sample.ply")
-    score = validate(prompt)
+    outputs['gaussian'][0].save_ply("sample_t23.ply")
+    score = validate(prompt, "sample_t23.ply")
     aggressive_cleanup()
     print(f"Score from text-to-3d: {score}")
     logging.info(f"Text-to-3D Score: {score}")
     return (outputs['gaussian'][0], score)
 
+async def generate_t23(prompt):
+    return await asyncio.to_thread(_generate_t23_sync, prompt)
 
-def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
+
+def _generate_t2i23_sync(prompt, guidance_scale=7.5, num_inference_steps=25):
     aggressive_cleanup()
     # torch.cuda.set_device(1)
     image = t2i_pipe(
@@ -152,16 +156,19 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
         return None
 
     # Save Gaussians as PLY files
-    outputs['gaussian'][0].save_ply("sample.ply")
-    score = validate(prompt)
+    outputs['gaussian'][0].save_ply("sample_t2i23.ply")
+    score = validate(prompt, "sample_t2i23.ply")
     aggressive_cleanup()
     print(f"Score from text-to-image-to-3d: {score}")
     logging.info(f"Text-to-Image-to-3D Score: {score}")
     return (outputs['gaussian'][0], score)
 
+async def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
+    return await asyncio.to_thread(_generate_t2i23_sync, prompt, guidance_scale, num_inference_steps)
 
-def validate(prompt):
-    with open("./sample.ply", "rb") as file:
+
+def validate(prompt, ply_path):
+    with open(ply_path, "rb") as file:
         file_data = file.read()
     encoded_data = pybase64.b64encode(file_data).decode("utf-8")
     validate_url = 'http://127.0.0.1:8094/validate_txt_to_3d_ply'
@@ -193,18 +200,78 @@ async def generate(
     logging.info(f"Processing prompt: {prompt}")
     t0 = time()
 
-    output_t23, score_t23 = generate_t23(prompt)
-    output_t2i23, score_t2i23 = generate_t2i23(prompt, guidance_scale=9.0, num_inference_steps=20)
-    if score_t23 < score_t2i23:
-        best_gaussian = output_t2i23
-        best_score = score_t2i23
-    else:
-        best_gaussian = output_t23
-        best_score = score_t23
+    # Run both generation methods concurrently with early termination
+    tasks = {
+        asyncio.create_task(generate_t23(prompt)): 't23',
+        asyncio.create_task(generate_t2i23(prompt, guidance_scale=9.0, num_inference_steps=20)): 't2i23'
+    }
+    
+    output_t23, score_t23 = None, 0
+    output_t2i23, score_t2i23 = None, 0
+    best_gaussian, best_score = None, 0
+    early_termination = False
+    
+    # Process results as they complete
+    for completed_task in asyncio.as_completed(tasks):
+        try:
+            result = await completed_task
+            task_type = tasks[completed_task]
+            
+            if result is not None:
+                gaussian, score = result
+                
+                if task_type == 't23':
+                    output_t23, score_t23 = gaussian, score
+                    print(f"generate_t23 completed with score: {score}")
+                    logging.info(f"generate_t23 completed with score: {score}")
+                    
+                    # Early termination if t23 score > 0.65
+                    if score > 0.65:
+                        print(f"Early termination: t23 score {score} > 0.65, cancelling t2i23")
+                        logging.info(f"Early termination: t23 score {score} > 0.65, cancelling t2i23")
+                        best_gaussian, best_score = gaussian, score
+                        early_termination = True
+                        
+                        # Cancel the remaining task
+                        for task, name in tasks.items():
+                            if name == 't2i23' and not task.done():
+                                task.cancel()
+                        break
+                    
+                elif task_type == 't2i23':
+                    output_t2i23, score_t2i23 = gaussian, score
+                    print(f"generate_t2i23 completed with score: {score}")
+                    logging.info(f"generate_t2i23 completed with score: {score}")
+            else:
+                print(f"Generation method {task_type} returned None")
+                logging.warning(f"Generation method {task_type} returned None")
+                
+        except Exception as e:
+            task_type = tasks[completed_task]
+            print(f"Error in {task_type}: {e}")
+            logging.error(f"Error in {task_type}: {e}")
+    
+    # If not early terminated, select the best result
+    if not early_termination:
+        if output_t23 is None and output_t2i23 is None:
+            raise Exception("Both generation methods failed")
+        elif output_t23 is None:
+            best_gaussian = output_t2i23
+            best_score = score_t2i23
+        elif output_t2i23 is None:
+            best_gaussian = output_t23
+            best_score = score_t23
+        elif score_t23 < score_t2i23:
+            best_gaussian = output_t2i23
+            best_score = score_t2i23
+        else:
+            best_gaussian = output_t23
+            best_score = score_t23
     
     t1 = time()
-    print(f"====Final Score: {best_score}, Generation took: {t1 - t0}====")
-    logging.info(f"Final Score: {best_score}, Generation took: {t1 - t0}")
+    termination_status = "early termination" if early_termination else "both methods completed"
+    print(f"====Final Score: {best_score}, Generation took: {t1 - t0}, Status: {termination_status}====")
+    logging.info(f"Final Score: {best_score}, Generation took: {t1 - t0}, Status: {termination_status}")
     logging.info("=============================================================")
 
     buffer = BytesIO()
