@@ -10,6 +10,7 @@ import pybase64
 import requests
 from time import time
 from rembg import remove
+import asyncio
 
 import gc
 
@@ -61,7 +62,7 @@ def validate(prompt, result_path="./sample.ply"):
         return 0
 
 
-def generate_t23(prompt):
+def _generate_t23_sync(prompt):
     aggressive_cleanup()
     try:
         outputs = pipeline.run(prompt + ", 3d style, whole body, cartoon asset", seed=1,
@@ -81,14 +82,17 @@ def generate_t23(prompt):
 
     # Render the outputs
     # Save Gaussians as PLY files
-    outputs['gaussian'][0].save_ply("sample.ply")
-    score = validate(prompt)
+    outputs['gaussian'][0].save_ply("sample_t23.ply")
+    score = validate(prompt, "sample_t23.ply")
     aggressive_cleanup()
     print(f"Score from text-to-3d: {score}")
     return (outputs['gaussian'][0], score)
 
+async def generate_t23(prompt):
+    return await asyncio.to_thread(_generate_t23_sync, prompt)
 
-def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
+
+def _generate_t2i23_sync(prompt, guidance_scale=7.5, num_inference_steps=25):
     aggressive_cleanup()
     image = t2i_pipe(
         prompt + ", white background, 3d style, whole body, cartoon asset",
@@ -120,46 +124,109 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
         return None
 
     # Save Gaussians as PLY files
-    outputs['gaussian'][0].save_ply("sample.ply")
-    score = validate(prompt)
+    outputs['gaussian'][0].save_ply("sample_t2i23.ply")
+    score = validate(prompt, "sample_t2i23.ply")
     aggressive_cleanup()
     print(f"Score from text-to-image-to-3d: {score}")
     return (outputs['gaussian'][0], score)
 
+async def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
+    return await asyncio.to_thread(_generate_t2i23_sync, prompt, guidance_scale, num_inference_steps)
 
-aggressive_cleanup()
-prompt = "pink bicycle"
-print("=============================================================")
 
-# Check GPU memory usage
-print("Memory usage:")
-for i in range(torch.cuda.device_count()):
-    torch.cuda.set_device(i)
-    print(f"Device {i}:")
-    print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
-    print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
+async def main():
+    aggressive_cleanup()
+    prompt = "pink bicycle"
+    print("=============================================================")
 
-print(f"====Prompt: {prompt}====")
-t0 = time()
+    # Check GPU memory usage
+    print("Memory usage:")
+    for i in range(torch.cuda.device_count()):
+        torch.cuda.set_device(i)
+        print(f"Device {i}:")
+        print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
+        print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
 
-output_t23, score_t23 = generate_t23(prompt)
-output_t2i23, score_t2i23 = generate_t2i23(prompt, guidance_scale=9.0, num_inference_steps=20)
+    print(f"====Prompt: {prompt}====")
+    t0 = time()
 
-if score_t23 >= score_t2i23:
-    best_score = score_t23
-    best_gaussian = output_t23
-else:
-    best_score = score_t2i23
-    best_gaussian = output_t2i23
+    # Run both generation methods concurrently with early termination
+    tasks = {
+        asyncio.create_task(generate_t23(prompt)): 't23',
+        asyncio.create_task(generate_t2i23(prompt, guidance_scale=9.0, num_inference_steps=20)): 't2i23'
+    }
+    
+    output_t23, score_t23 = None, 0
+    output_t2i23, score_t2i23 = None, 0
+    best_gaussian, best_score = None, 0
+    early_termination = False
+    
+    # Process results as they complete
+    for completed_task in asyncio.as_completed(tasks):
+        try:
+            result = await completed_task
+            task_type = tasks[completed_task]
+            
+            if result is not None:
+                gaussian, score = result
+                
+                if task_type == 't23':
+                    output_t23, score_t23 = gaussian, score
+                    print(f"generate_t23 completed with score: {score}")
+                    
+                    # Early termination if t23 score > 0.65
+                    if score > 0.65:
+                        print(f"Early termination: t23 score {score} > 0.65, cancelling t2i23")
+                        best_gaussian, best_score = gaussian, score
+                        early_termination = True
+                        
+                        # Cancel the remaining task
+                        for task, name in tasks.items():
+                            if name == 't2i23' and not task.done():
+                                task.cancel()
+                        break
+                    
+                elif task_type == 't2i23':
+                    output_t2i23, score_t2i23 = gaussian, score
+                    print(f"generate_t2i23 completed with score: {score}")
+            else:
+                print(f"Generation method {task_type} returned None")
+                
+        except Exception as e:
+            task_type = tasks[completed_task]
+            print(f"Error in {task_type}: {e}")
+    
+    # If not early terminated, select the best result
+    if not early_termination:
+        if output_t23 is None and output_t2i23 is None:
+            raise Exception("Both generation methods failed")
+        elif output_t23 is None:
+            best_gaussian = output_t2i23
+            best_score = score_t2i23
+        elif output_t2i23 is None:
+            best_gaussian = output_t23
+            best_score = score_t23
+        elif score_t23 < score_t2i23:
+            best_gaussian = output_t2i23
+            best_score = score_t2i23
+        else:
+            best_gaussian = output_t23
+            best_score = score_t23
+    
+    t1 = time()
+    termination_status = "early termination" if early_termination else "both methods completed"
+    print(f"====Final Score: {best_score}, Generation took: {t1 - t0}, Status: {termination_status}====")
 
-print(f"====Final Score: {best_score}, Generation took: {time() - t0}====")
+    # Check GPU memory usage
+    print("Memory usage:")
+    for i in range(torch.cuda.device_count()):
+        torch.cuda.set_device(i)
+        print(f"Device {i}:")
+        print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
+        print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
 
-# Check GPU memory usage
-print("Memory usage:")
-for i in range(torch.cuda.device_count()):
-    torch.cuda.set_device(i)
-    print(f"Device {i}:")
-    print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
-    print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
+    print("=============================================================")
+    return best_gaussian, best_score
 
-print("=============================================================")
+if __name__ == "__main__":
+    asyncio.run(main())
