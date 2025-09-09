@@ -178,14 +178,17 @@ while cnt < total_cnt :
     t0 = time()
 
     output_t23, score_t23 = generate_t23(prompt)
-    output_t2i23, score_t2i23 = generate_t2i23(prompt, guidance_scale=9.0, num_inference_steps=20)
-
-    if score_t23 >= score_t2i23:
+    if score_t23 > 0.65:
         best_score = score_t23
         best_gaussian = output_t23
     else:
-        best_score = score_t2i23
-        best_gaussian = output_t2i23
+        output_t2i23, score_t2i23 = generate_t2i23(prompt, guidance_scale=9.0, num_inference_steps=20)
+        if score_t23 < score_t2i23:
+            best_gaussian = output_t2i23
+            best_score = score_t2i23
+        else:
+            best_gaussian = output_t23
+            best_score = score_t23
     
     print(f"====Final Score: {best_score}, Generation took: {time() - t0}====")
     logging.info(f"Final Score: {best_score}, Generation took: {time() - t0}")
