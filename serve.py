@@ -201,10 +201,11 @@ async def generate(
     t0 = time()
 
     # Run both generation methods concurrently with early termination
-    tasks = {
-        asyncio.create_task(generate_t23(prompt)): 't23',
-        asyncio.create_task(generate_t2i23(prompt, guidance_scale=9.0, num_inference_steps=20)): 't2i23'
-    }
+    t23_task = asyncio.create_task(generate_t23(prompt))
+    t2i23_task = asyncio.create_task(generate_t2i23(prompt, guidance_scale=9.0, num_inference_steps=20))
+    
+    pending_tasks = {t23_task, t2i23_task}
+    task_names = {t23_task: 't23', t2i23_task: 't2i23'}
     
     output_t23, score_t23 = None, 0
     output_t2i23, score_t2i23 = None, 0
@@ -212,44 +213,47 @@ async def generate(
     early_termination = False
     
     # Process results as they complete
-    for completed_task in asyncio.as_completed(tasks):
-        try:
-            result = await completed_task
-            task_type = tasks[completed_task]
-            
-            if result is not None:
-                gaussian, score = result
+    while pending_tasks:
+        done, pending_tasks = await asyncio.wait(pending_tasks, return_when=asyncio.FIRST_COMPLETED)
+        
+        for completed_task in done:
+            try:
+                result = await completed_task
+                task_type = task_names[completed_task]
                 
-                if task_type == 't23':
-                    output_t23, score_t23 = gaussian, score
-                    print(f"generate_t23 completed with score: {score}")
-                    logging.info(f"generate_t23 completed with score: {score}")
+                if result is not None:
+                    gaussian, score = result
                     
-                    # Early termination if t23 score > 0.65
-                    if score > 0.65:
-                        print(f"Early termination: t23 score {score} > 0.65, cancelling t2i23")
-                        logging.info(f"Early termination: t23 score {score} > 0.65, cancelling t2i23")
-                        best_gaussian, best_score = gaussian, score
-                        early_termination = True
+                    if task_type == 't23':
+                        output_t23, score_t23 = gaussian, score
+                        print(f"generate_t23 completed with score: {score}")
+                        logging.info(f"generate_t23 completed with score: {score}")
                         
-                        # Cancel the remaining task
-                        for task, name in tasks.items():
-                            if name == 't2i23' and not task.done():
+                        # Early termination if t23 score > 0.65
+                        if score > 0.65:
+                            print(f"Early termination: t23 score {score} > 0.65, cancelling t2i23")
+                            logging.info(f"Early termination: t23 score {score} > 0.65, cancelling t2i23")
+                            best_gaussian, best_score = gaussian, score
+                            early_termination = True
+                            
+                            # Cancel remaining tasks
+                            for task in pending_tasks:
                                 task.cancel()
-                        break
+                            pending_tasks.clear()
+                            break
+                        
+                    elif task_type == 't2i23':
+                        output_t2i23, score_t2i23 = gaussian, score
+                        print(f"generate_t2i23 completed with score: {score}")
+                        logging.info(f"generate_t2i23 completed with score: {score}")
+                else:
+                    print(f"Generation method {task_type} returned None")
+                    logging.warning(f"Generation method {task_type} returned None")
                     
-                elif task_type == 't2i23':
-                    output_t2i23, score_t2i23 = gaussian, score
-                    print(f"generate_t2i23 completed with score: {score}")
-                    logging.info(f"generate_t2i23 completed with score: {score}")
-            else:
-                print(f"Generation method {task_type} returned None")
-                logging.warning(f"Generation method {task_type} returned None")
-                
-        except Exception as e:
-            task_type = tasks[completed_task]
-            print(f"Error in {task_type}: {e}")
-            logging.error(f"Error in {task_type}: {e}")
+            except Exception as e:
+                task_type = task_names[completed_task]
+                print(f"Error in {task_type}: {e}")
+                logging.error(f"Error in {task_type}: {e}")
     
     # If not early terminated, select the best result
     if not early_termination:

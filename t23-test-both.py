@@ -10,16 +10,23 @@ import pybase64
 import requests
 from time import time
 from rembg import remove
-import multiprocessing as mp
+import asyncio
+import gc
 
-torch.cuda.set_device(0)
-torch.cuda.empty_cache()
+def aggressive_cleanup():
+    """Perform aggressive memory cleanup"""
+    gc.collect()
+    for i in range(torch.cuda.device_count()):
+        torch.cuda.set_device(i)
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+
+aggressive_cleanup()
 
 pipeline = TrellisTextTo3DPipeline.from_pretrained("microsoft/TRELLIS-text-xlarge")
 pipeline.cuda()
 
-torch.cuda.set_device(1)
-torch.cuda.empty_cache()
+aggressive_cleanup()
 
 model_id = "Tencent-Hunyuan/HunyuanDiT-v1.2-Diffusers-Distilled"
 
@@ -32,8 +39,7 @@ t2i_pipe.transformer = t2i_pipe.transformer.half()
 t2i_pipe.vae = t2i_pipe.vae.half()
 t2i_pipe.text_encoder = t2i_pipe.text_encoder.half()
 
-torch.cuda.set_device(2)
-torch.cuda.empty_cache()
+aggressive_cleanup()
 
 i23_pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
 i23_pipeline.cuda()
@@ -55,9 +61,8 @@ def validate(prompt, result_path="./sample.ply"):
         return 0
 
 
-def generate_t23(prompt, output_queue):
-    torch.cuda.set_device(0)
-    torch.cuda.empty_cache()
+def _generate_t23_sync(prompt):
+    aggressive_cleanup()
     try:
         outputs = pipeline.run(prompt + ", 3d style, whole body, cartoon asset", seed=1,
             sparse_structure_sampler_params={
@@ -67,7 +72,8 @@ def generate_t23(prompt, output_queue):
             slat_sampler_params={
                 "steps": 30,
                 "cfg_strength": 4,
-            }
+            },
+            formats=['gaussian']
         )
     except Exception as e:
         print(f"Error during generation: {e}")
@@ -75,16 +81,18 @@ def generate_t23(prompt, output_queue):
 
     # Render the outputs
     # Save Gaussians as PLY files
-    outputs['gaussian'][0].save_ply("sample1.ply")
-    score = validate(prompt, result_path="./sample1.ply")
-    torch.cuda.empty_cache()
+    outputs['gaussian'][0].save_ply("sample_t23.ply")
+    score = validate(prompt, result_path="./sample_t23.ply")
+    aggressive_cleanup()
     print(f"Score from text-to-3d: {score}")
-    output_queue.put(("text-to-3d", outputs['gaussian'][0], score))
+    return (outputs['gaussian'][0], score)
+
+async def generate_t23(prompt):
+    return await asyncio.to_thread(_generate_t23_sync, prompt)
 
 
-def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25, output_queue=None):
-    torch.cuda.set_device(1)
-    torch.cuda.empty_cache()
+def _generate_t2i23_sync(prompt, guidance_scale=7.5, num_inference_steps=25):
+    aggressive_cleanup()
     image = t2i_pipe(
         prompt + ", white background, 3d style, whole body, cartoon asset",
         negative_prompt="Text, flasy, close-up, cropped, out of frame, worst quality, low quality, JPEG artifacts, PGLY, repetitive, morbid," \
@@ -96,10 +104,7 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25, output_qu
     ).images[0]
 
     image = remove(image, alpha_matting=True, alpha_matting_foreground_threshold=240)
-    torch.cuda.empty_cache()
-
-    torch.cuda.set_device(2)
-    torch.cuda.empty_cache()
+    aggressive_cleanup()
 
     # Run the pipeline
     try:
@@ -111,61 +116,132 @@ def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25, output_qu
             slat_sampler_params={
                 "steps": 30,
                 "cfg_strength": 4,
-            }
+            },
+            formats=['gaussian']
         )
     except ValueError:  # raised if `y` is empty.
         return None
 
     # Save Gaussians as PLY files
-    outputs['gaussian'][0].save_ply("sample2.ply")
-    score = validate(prompt, result_path="./sample2.ply")
-    torch.cuda.empty_cache()
+    outputs['gaussian'][0].save_ply("sample_t2i23.ply")
+    score = validate(prompt, result_path="./sample_t2i23.ply")
+    aggressive_cleanup()
     print(f"Score from text-to-image-to-3d: {score}")
-    output_queue.put(("text-to-image-to-3d", outputs['gaussian'][0], score))
+    return (outputs['gaussian'][0], score)
+
+async def generate_t2i23(prompt, guidance_scale=7.5, num_inference_steps=25):
+    return await asyncio.to_thread(_generate_t2i23_sync, prompt, guidance_scale, num_inference_steps)
 
 
-mp.set_start_method('spawn', force=True)  # for CUDA
-prompts_file = open("/workspace/logs/prompts.txt", "r")
-total_cnt = int(input("Total count: "))
-cnt = 0
-while cnt < total_cnt :
-    torch.cuda.empty_cache()
-    prompt = prompts_file.readline()[:-2]
+async def process_prompt(prompt):
+    """Process a single prompt with concurrent generation"""
     print("=============================================================")
     print(f"====Prompt: {prompt}====")
     t0 = time()
 
-    output_queue = mp.Queue()
-    t23_process = mp.Process(target=generate_t23, args=(prompt, output_queue))
-    t2i23_process = mp.Process(target=generate_t2i23, args=(prompt, 9.0, 25, output_queue))
-
-    # Start both processes
-    t23_process.start()
-    t2i23_process.start()
-
-    # Wait for both processes to finish
-    t23_process.join()
-    t2i23_process.join()
-
-    # Retrieve results from the queue
-    results = [output_queue.get() for _ in range(2)]
-    best_method, best_gaussian, best_score = max(results, key=lambda x: x[2])
-    print(f"Best method: {best_method} with score {best_score}")
-    # best_gaussian.save_ply("sample.ply")
+    # Run both generation methods concurrently with early termination
+    t23_task = asyncio.create_task(generate_t23(prompt))
+    t2i23_task = asyncio.create_task(generate_t2i23(prompt, guidance_scale=9.0, num_inference_steps=25))
     
-    print(f"====Final Score: {best_score}, Generation took: {time() - t0}====")
-    cnt = cnt + 1
+    pending_tasks = {t23_task, t2i23_task}
+    task_names = {t23_task: 't23', t2i23_task: 't2i23'}
+    
+    output_t23, score_t23 = None, 0
+    output_t2i23, score_t2i23 = None, 0
+    best_gaussian, best_score = None, 0
+    early_termination = False
+    
+    # Process results as they complete
+    while pending_tasks:
+        done, pending_tasks = await asyncio.wait(pending_tasks, return_when=asyncio.FIRST_COMPLETED)
+        
+        for completed_task in done:
+            try:
+                result = await completed_task
+                task_type = task_names[completed_task]
+                
+                if result is not None:
+                    gaussian, score = result
+                    
+                    if task_type == 't23':
+                        output_t23, score_t23 = gaussian, score
+                        print(f"generate_t23 completed with score: {score}")
+                        
+                        # Early termination if t23 score > 0.65
+                        if score > 0.65:
+                            print(f"Early termination: t23 score {score} > 0.65, cancelling t2i23")
+                            best_gaussian, best_score = gaussian, score
+                            early_termination = True
+                            
+                            # Cancel remaining tasks
+                            for task in pending_tasks:
+                                task.cancel()
+                            pending_tasks.clear()
+                            break
+                        
+                    elif task_type == 't2i23':
+                        output_t2i23, score_t2i23 = gaussian, score
+                        print(f"generate_t2i23 completed with score: {score}")
+                else:
+                    print(f"Generation method {task_type} returned None")
+                    
+            except Exception as e:
+                task_type = task_names[completed_task]
+                print(f"Error in {task_type}: {e}")
+    
+    # If not early terminated, select the best result
+    if not early_termination:
+        if output_t23 is None and output_t2i23 is None:
+            raise Exception("Both generation methods failed")
+        elif output_t23 is None:
+            best_gaussian = output_t2i23
+            best_score = score_t2i23
+        elif output_t2i23 is None:
+            best_gaussian = output_t23
+            best_score = score_t23
+        elif score_t23 < score_t2i23:
+            best_gaussian = output_t2i23
+            best_score = score_t2i23
+        else:
+            best_gaussian = output_t23
+            best_score = score_t23
+    
+    t1 = time()
+    termination_status = "early termination" if early_termination else "both methods completed"
+    print(f"====Final Score: {best_score}, Generation took: {t1 - t0}, Status: {termination_status}====")
 
+    # Check GPU memory usage
     print("Memory usage:")
     for i in range(torch.cuda.device_count()):
         torch.cuda.set_device(i)
-        torch.cuda.empty_cache()
         print(f"Device {i}:")
         print(torch.cuda.memory_allocated() / 1024**3, "GB allocated")
         print(torch.cuda.memory_reserved() / 1024**3, "GB reserved")
 
     print("=============================================================")
+    return best_gaussian, best_score
 
-    output_queue.close()
+async def main():
+    """Main async function to process multiple prompts"""
+    prompts_file = open("/workspace/logs/prompts.txt", "r")
+    total_cnt = int(input("Total count: "))
+    cnt = 0
+    
+    while cnt < total_cnt:
+        aggressive_cleanup()
+        prompt = prompts_file.readline()[:-2]
+        if not prompt:  # End of file
+            break
+            
+        try:
+            best_gaussian, best_score = await process_prompt(prompt)
+            cnt += 1
+        except Exception as e:
+            print(f"Failed to process prompt '{prompt}': {e}")
+            cnt += 1
+    
+    prompts_file.close()
+    print(f"Processed {cnt} prompts successfully.")
 
-prompts_file.close()
+if __name__ == "__main__":
+    asyncio.run(main())
